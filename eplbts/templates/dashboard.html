@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>Welcome, {{ user.username }}! 👋</h3>
+<p class="text-muted">Role: <strong>{{ user.get_role_display }}</strong></p>
+<hr>
+
+<div class="row g-3 mt-2">
+
+    {% if user.is_paramedic %}
+    <div class="col-md-4">
+        <div class="card border-danger text-center p-3">
+            <h5>📝 Submit Triage</h5>
+            <p class="text-muted small">Submit a new emergency case</p>
+            <a href="#" class="btn btn-danger btn-sm">Go →</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_hospital_admin %}
+    <div class="col-md-4">
+        <div class="card border-primary text-center p-3">
+            <h5>🏥 Update Hospital Status</h5>
+            <p class="text-muted small">Update ICU and bed availability</p>
+            <a href="#" class="btn btn-primary btn-sm">Go →</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_authority %}
+    <div class="col-md-4">
+        <div class="card border-success text-center p-3">
+            <h5>📊 Monitor Dashboard</h5>
+            <p class="text-muted small">View hospital load and trends</p>
+            <a href="#" class="btn btn-success btn-sm">Go →</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_system_admin %}
+    <div class="col-md-4">
+        <div class="card border-dark text-center p-3">
+            <h5>⚙️ Admin Panel</h5>
+            <p class="text-muted small">Manage users and system settings</p>
+            <a href="/admin/" class="btn btn-dark btn-sm">Go →</a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+</body>
+</html>
