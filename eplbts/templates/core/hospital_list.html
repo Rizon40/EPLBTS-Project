@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>🏥 Hospital List</h3>
+<p class="text-muted">All registered hospitals and their current status.</p>
+<hr>
+
+{% if hospitals %}
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Hospital Name</th>
+                <th>Specialty</th>
+                <th>ICU (Available/Total)</th>
+                <th>Beds (Available/Total)</th>
+                <th>Ventilator</th>
+                <th>Blood Bank</th>
+                <th>Accepting</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hospital in hospitals %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><strong>{{ hospital.name }}</strong></td>
+                <td>{{ hospital.get_specialty_display }}</td>
+
+                {% if hospital.latest_status %}
+                <td>
+                    <span class="badge bg-{% if hospital.latest_status.icu_available > 0 %}success{% else %}danger{% endif %}">
+                        {{ hospital.latest_status.icu_available }} / {{ hospital.latest_status.icu_total }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-{% if hospital.latest_status.bed_available > 0 %}success{% else %}danger{% endif %}">
+                        {{ hospital.latest_status.bed_available }} / {{ hospital.latest_status.bed_total }}
+                    </span>
+                </td>
+                <td>{% if hospital.latest_status.has_ventilator %}✅{% else %}❌{% endif %}</td>
+                <td>{% if hospital.latest_status.has_blood_bank %}✅{% else %}❌{% endif %}</td>
+                <td>
+                    {% if hospital.latest_status.is_accepting %}
+                    <span class="badge bg-success">Yes</span>
+                    {% else %}
+                    <span class="badge bg-danger">No</span>
+                    {% endif %}
+                </td>
+                {% else %}
+                <td colspan="5" class="text-muted">No status updated yet</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-warning">No hospitals registered yet.</div>
+{% endif %}
+{% endblock %}
+</body>
+</html>

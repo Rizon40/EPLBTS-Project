@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white text-center">
+                <h3>🆘 SOS Emergency</h3>
+                <small>No login required — submit your emergency now</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Emergency Type</label>
+                        {{ form.case_type }}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Your Age</label>
+                            {{ form.patient_age }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Gender</label>
+                            {{ form.patient_gender }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">📞 Contact Phone Number</label>
+                        {{ form.phone_number }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">📍 Your Location</label>
+                        {{ form.location_text }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg">🚨 Send SOS Emergency</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>

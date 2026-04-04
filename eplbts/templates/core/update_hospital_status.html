@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>🏥 Update Hospital Status</h3>
+<p class="text-muted">Hospital: <strong>{{ hospital.name }}</strong></p>
+<hr>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <h5 class="text-primary mb-3">🛏️ Bed Availability</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">ICU Total</label>
+                            {{ form.icu_total }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">ICU Available</label>
+                            {{ form.icu_available }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bed Total</label>
+                            {{ form.bed_total }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bed Available</label>
+                            {{ form.bed_available }}
+                        </div>
+                    </div>
+
+                    <h5 class="text-warning mb-3 mt-4">⚕️ Facilities</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                {{ form.has_ventilator }}
+                                <label class="form-check-label">Ventilator</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                {{ form.has_blood_bank }}
+                                <label class="form-check-label">Blood Bank</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                {{ form.has_cath_lab }}
+                                <label class="form-check-label">Cath Lab</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                {{ form.is_accepting }}
+                                <label class="form-check-label">Accepting Patients</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if latest_status %}
+                    <div class="alert alert-info small mt-3">
+                        Last updated: {{ latest_status.updated_at }}
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    <button type="submit" class="btn btn-primary btn-lg">💾 Update Status</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>

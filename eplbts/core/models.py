@@ -1,8 +1,9 @@
+
 from django.db import models
 from django.conf import settings
 
 
-# Hospita
+# 1. Hospital
 class Hospital(models.Model):
 
     SPECIALTY_CHOICES = [
@@ -53,9 +54,9 @@ class HospitalStatus(models.Model):
 
     has_ventilator   = models.BooleanField(default=False)
     has_blood_bank   = models.BooleanField(default=False)
-    has_cath_lab     = models.BooleanField(default=False)   # cardiac lab
+    has_cath_lab     = models.BooleanField(default=False)
 
-    is_accepting     = models.BooleanField(default=True)    # accepting patients?
+    is_accepting     = models.BooleanField(default=True)
 
     updated_at       = models.DateTimeField(auto_now=True)
 
@@ -79,7 +80,7 @@ class HospitalStatus(models.Model):
 
 
 
-# PatientEvent (Emergency triage case)
+# 3. PatientEvent (Emergency triage case)
 class PatientEvent(models.Model):
 
     CASE_TYPE_CHOICES = [
@@ -108,19 +109,18 @@ class PatientEvent(models.Model):
     case_type    = models.CharField(max_length=20, choices=CASE_TYPE_CHOICES)
     description  = models.TextField(blank=True)
 
-    # Patient info (minimal — no full PII)
     patient_age     = models.PositiveIntegerField()
     patient_gender  = models.CharField(
                             max_length=10,
                             choices=[('male','Male'),('female','Female'),('other','Other')]
                         )
 
-    # Location of emergency
     location_text   = models.CharField(max_length=300)
     latitude        = models.FloatField(null=True, blank=True)
     longitude       = models.FloatField(null=True, blank=True)
 
-    # Requirements
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+
     needs_icu        = models.BooleanField(default=False)
     needs_ventilator = models.BooleanField(default=False)
     needs_blood_bank = models.BooleanField(default=False)
@@ -141,8 +141,7 @@ class PatientEvent(models.Model):
         return f"Case #{self.id} — {self.get_case_type_display()} ({self.status})"
 
 
-
-# TransferRequest
+# 4. TransferRequest
 class TransferRequest(models.Model):
 
     STATUS_CHOICES = [
@@ -182,8 +181,7 @@ class TransferRequest(models.Model):
     def __str__(self):
         return f"Transfer #{self.id} → {self.hospital.name} ({self.status})"
 
-
-# Notification
+# 5. Notification
 class Notification(models.Model):
 
     STATUS_CHOICES = [
@@ -215,8 +213,7 @@ class Notification(models.Model):
     def __str__(self):
         return f"Notification → {self.hospital.name} [{self.status}]"
 
-
-# AuditLog
+# 6. AuditLog
 class AuditLog(models.Model):
 
     ACTION_CHOICES = [

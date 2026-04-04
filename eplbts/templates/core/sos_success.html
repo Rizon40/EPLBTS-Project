@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow border-success">
+            <div class="card-body text-center p-5">
+                <h1 class="text-success">🚑</h1>
+                <h3>Emergency Request Submitted!</h3>
+                <p class="text-muted">Help is on the way. Stay calm.</p>
+                <hr>
+                <p><strong>Case ID:</strong> #{{ event.id }}</p>
+                <p><strong>Type:</strong> {{ event.get_case_type_display }}</p>
+                <p><strong>Location:</strong> {{ event.location_text }}</p>
+                <p><strong>Status:</strong>
+                    <span class="badge bg-warning">{{ event.get_status_display }}</span>
+                </p>
+                <hr>
+                <a href="{% url 'hospital_list' %}" class="btn btn-primary">🏥 View Nearby Hospitals</a>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">🏠 Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>
