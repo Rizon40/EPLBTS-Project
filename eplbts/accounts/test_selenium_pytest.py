@@ -1,14 +1,10 @@
-# accounts/test_selenium_pytest.py
-# Stage 1 Selenium Tests — Must-Run 8 Tests
-# Features: Register, Login, Dashboard, Logout
-
 import os
 import django
 import pytest
 import time
 import uuid
 
-# ─── Django Setup ───
+# ---Django Setup ---
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "eplbts.settings")
 django.setup()
 
@@ -21,9 +17,6 @@ from selenium.webdriver.common.by import By
 BASE_URL = "http://127.0.0.1:8000"
 
 
-# ─────────────────────────────────────────
-# Fixture: testuser একবার তৈরি হবে
-# ─────────────────────────────────────────
 @pytest.fixture(scope="session", autouse=True)
 def create_test_user():
     User = get_user_model()
@@ -33,10 +26,6 @@ def create_test_user():
     user.save()
     yield
 
-
-# ─────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────
 def get_driver():
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
     driver.implicitly_wait(5)
@@ -57,9 +46,7 @@ def do_login(driver, username="testuser", password="TestPass123!"):
     time.sleep(2)
 
 
-# ═══════════════════════════════════════════
-# TEST 1: Register page লোড হয়
-# ═══════════════════════════════════════════
+# TEST 1: Register page
 def test_register_page_loads():
     driver = get_driver()
     driver.get(f"{BASE_URL}/accounts/register/")
@@ -68,9 +55,7 @@ def test_register_page_loads():
     driver.quit()
 
 
-# ═══════════════════════════════════════════
-# TEST 2: নতুন user register করা যায়
-# ═══════════════════════════════════════════
+# TEST 2: user register test
 def test_register_new_user():
     driver = get_driver()
     unique_user = f"user_{uuid.uuid4().hex[:6]}"
@@ -90,30 +75,21 @@ def test_register_new_user():
     assert "/accounts/login/" in driver.current_url
     driver.quit()
 
-
-# ═══════════════════════════════════════════
-# TEST 3: Valid credentials দিয়ে login হয়
-# ═══════════════════════════════════════════
+# TEST 3: Login Valid credentials
 def test_login_valid_credentials():
     driver = get_driver()
     do_login(driver)
     assert "/dashboard/" in driver.current_url
     driver.quit()
 
-
-# ═══════════════════════════════════════════
-# TEST 4: Wrong password দিলে login হয় না
-# ═══════════════════════════════════════════
+# TEST 4: Wrong password test login
 def test_login_wrong_password():
     driver = get_driver()
     do_login(driver, password="WrongPass!")
     assert "/accounts/login/" in driver.current_url
     driver.quit()
 
-
-# ═══════════════════════════════════════════
-# TEST 5: Login ছাড়া dashboard এ গেলে redirect হয়
-# ═══════════════════════════════════════════
+# TEST 5: Test dashboard without login redirect
 def test_dashboard_without_login_redirects():
     driver = get_driver()
     driver.get(f"{BASE_URL}/dashboard/")
@@ -122,9 +98,7 @@ def test_dashboard_without_login_redirects():
     driver.quit()
 
 
-# ═══════════════════════════════════════════
-# TEST 6: Dashboard এ welcome message দেখায়
-# ═══════════════════════════════════════════
+# TEST 6: Show dashboard
 def test_dashboard_shows_welcome_message():
     driver = get_driver()
     do_login(driver)
@@ -132,11 +106,7 @@ def test_dashboard_shows_welcome_message():
     assert "Welcome, testuser" in page
     driver.quit()
 
-
-# ═══════════════════════════════════════════
-# TEST 7: Logout কাজ করে
-# ═══════════════════════════════════════════
-def test_logout_works():
+# TEST 7: Logout test
     driver = get_driver()
     do_login(driver)
     driver.find_element(By.LINK_TEXT, "Logout").click()
