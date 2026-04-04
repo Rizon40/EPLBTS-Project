@@ -20,8 +20,9 @@ from django.urls import path, include
 from accounts.views import dashboard_view
 
 urlpatterns = [
-    path('admin/',      admin.site.urls),
-    path('accounts/',   include('accounts.urls')),
-    path('dashboard/',  dashboard_view, name='dashboard'),
-    path('',            dashboard_view, name='home'),
+    path('admin/', admin.site.urls),
+    path('accounts/', include('accounts.urls')),
+    path('', include('core.urls')),
+    path('dashboard/',dashboard_view, name='dashboard'),
+    path('home/', dashboard_view, name='home'),
 ]
