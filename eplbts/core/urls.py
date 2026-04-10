@@ -16,4 +16,6 @@ urlpatterns = [
     path('transfer/<int:event_pk>/<int:hospital_pk>/',views.create_transfer,name='create_transfer'),
     path('transfers/incoming/', views.incoming_transfers,name='incoming_transfers'),
     path('transfers/<int:pk>/<str:action>/',views.respond_transfer, name='respond_transfer'),
+
+    path('notifications/', views.hospital_notifications, name='hospital_notifications'),
 ]
