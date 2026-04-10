@@ -12,4 +12,8 @@ urlpatterns = [
     path('sos/success/<int:pk>/', views.sos_success, name='sos_success'),
     path('cases/pending/',  views.pending_cases, name='pending_cases'),
     path('cases/<int:pk>/recommend/', views.recommend_hospitals,name='recommend_hospitals'),
+
+    path('transfer/<int:event_pk>/<int:hospital_pk>/',views.create_transfer,name='create_transfer'),
+    path('transfers/incoming/', views.incoming_transfers,name='incoming_transfers'),
+    path('transfers/<int:pk>/<str:action>/',views.respond_transfer, name='respond_transfer'),
 ]
