@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>📋 Pending Emergency Cases</h3>
+<p class="text-muted">Cases waiting for hospital recommendation and transfer.</p>
+<hr>
+
+{% if cases %}
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Case ID</th>
+                <th>Type</th>
+                <th>Age / Gender</th>
+                <th>Location</th>
+                <th>Requirements</th>
+                <th>Phone</th>
+                <th>Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in cases %}
+            <tr>
+                <td><strong>#{{ case.id }}</strong></td>
+                <td>{{ case.get_case_type_display }}</td>
+                <td>{{ case.patient_age }} / {{ case.get_patient_gender_display }}</td>
+                <td>{{ case.location_text }}</td>
+                <td>
+                    {% if case.needs_icu %}<span class="badge bg-danger me-1">ICU</span>{% endif %}
+                    {% if case.needs_ventilator %}<span class="badge bg-warning me-1">Ventilator</span>{% endif %}
+                    {% if case.needs_blood_bank %}<span class="badge bg-info me-1">Blood Bank</span>{% endif %}
+                    {% if case.needs_cath_lab %}<span class="badge bg-secondary me-1">Cath Lab</span>{% endif %}
+                    {% if not case.needs_icu and not case.needs_ventilator and not case.needs_blood_bank and not case.needs_cath_lab %}
+                    <span class="text-muted">General</span>
+                    {% endif %}
+                </td>
+                <td>{{ case.phone_number|default:"N/A" }}</td>
+                <td>{{ case.created_at|timesince }} ago</td>
+                <td>
+                    <a href="{% url 'recommend_hospitals' pk=case.pk %}" class="btn btn-danger btn-sm">
+                        🏥 Find Hospital
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success">
+    ✅ No pending cases at the moment.
+</div>
+{% endif %}
+{% endblock %}

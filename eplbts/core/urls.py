@@ -10,4 +10,6 @@ urlpatterns = [
     path('hospitals/', views.hospital_list, name='hospital_list'),
     path('sos/', views.sos_emergency, name='sos_emergency'),
     path('sos/success/<int:pk>/', views.sos_success, name='sos_success'),
+    path('cases/pending/',  views.pending_cases, name='pending_cases'),
+    path('cases/<int:pk>/recommend/', views.recommend_hospitals,name='recommend_hospitals'),
 ]
