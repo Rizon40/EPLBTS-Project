@@ -282,3 +282,57 @@ def incoming_transfers(request):
         'transfers': transfers,
         'hospital': hospital,
     })
+
+# 11. Hospital Admin — Accept/Reject Transfer
+@login_required
+def respond_transfer(request, pk, action):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    transfer = get_object_or_404(TransferRequest, pk=pk)
+
+    # Verify this transfer belongs to admin's hospital
+    if transfer.hospital != request.user.hospital:
+        messages.error(request, 'Access denied. This transfer is not for your hospital.')
+        return redirect('incoming_transfers')
+
+    if action == 'accept':
+        transfer.status = 'accepted'
+        transfer.save()
+
+        # Update patient event
+        transfer.patient_event.status = 'transferred'
+        transfer.patient_event.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            performed_by=request.user,
+            patient_event=transfer.patient_event,
+            transfer_request=transfer,
+            action='transfer_accepted',
+            description=f'{request.user.hospital.name} accepted Case #{transfer.patient_event.id}'
+        )
+
+        messages.success(request, f'Transfer accepted for Case #{transfer.patient_event.id}!')
+
+    elif action == 'reject':
+        transfer.status = 'rejected'
+        transfer.save()
+
+        # Reset patient event to pending
+        transfer.patient_event.status = 'pending'
+        transfer.patient_event.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            performed_by=request.user,
+            patient_event=transfer.patient_event,
+            transfer_request=transfer,
+            action='transfer_rejected',
+            description=f'{request.user.hospital.name} rejected Case #{transfer.patient_event.id}'
+        )
+
+        messages.warning(request, f'Transfer rejected for Case #{transfer.patient_event.id}.')
+
+    return redirect('incoming_transfers')
