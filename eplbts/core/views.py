@@ -261,3 +261,24 @@ def create_transfer(request, event_pk, hospital_pk):
 
     messages.success(request, f'Transfer request sent to {hospital.name}!')
     return redirect('pending_cases')
+
+
+# 10. Hospital Admin — Incoming Transfer Requests
+@login_required
+def incoming_transfers(request):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospital = request.user.hospital
+
+    if not hospital:
+        messages.error(request, 'No hospital assigned to your account.')
+        return redirect('dashboard')
+
+    transfers = TransferRequest.objects.filter(hospital=hospital).order_by('-created_at')
+
+    return render(request, 'core/incoming_transfers.html', {
+        'transfers': transfers,
+        'hospital': hospital,
+    })
