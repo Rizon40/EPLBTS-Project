@@ -211,3 +211,53 @@ def recommend_hospitals(request, pk):
         'recommendations': recommendations,
         'map_data': map_data,
     })
+
+
+# 9. Paramedic — Create Transfer Request
+@login_required
+def create_transfer(request, event_pk, hospital_pk):
+    if request.user.role != 'paramedic':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    patient_event = get_object_or_404(PatientEvent, pk=event_pk)
+    hospital = get_object_or_404(Hospital, pk=hospital_pk)
+
+    # Check if transfer already exists
+    if TransferRequest.objects.filter(patient_event=patient_event).exists():
+        messages.warning(request, 'Transfer request already exists for this case.')
+        return redirect('pending_cases')
+
+    # Create Transfer Request
+    transfer = TransferRequest.objects.create(
+        patient_event=patient_event,
+        hospital=hospital,
+        requested_by=request.user,
+        status='pending'
+    )
+
+    # Update patient event status
+    patient_event.status = 'referred'
+    patient_event.save()
+
+    # Create Notification for hospital
+    Notification.objects.create(
+        hospital=hospital,
+        transfer_request=transfer,
+        message=f'New emergency transfer request: {patient_event.get_case_type_display()} — '
+                f'Patient Age: {patient_event.patient_age}, '
+                f'Location: {patient_event.location_text}',
+        status='sent'
+    )
+
+    # Audit Log
+    AuditLog.objects.create(
+        performed_by=request.user,
+        patient_event=patient_event,
+        transfer_request=transfer,
+        action='triage_submitted',
+        description=f'Transfer request sent to {hospital.name} for Case #{patient_event.id}'
+    )
+
+    messages.success(request, f'Transfer request sent to {hospital.name}!')
+    return redirect('pending_cases')
