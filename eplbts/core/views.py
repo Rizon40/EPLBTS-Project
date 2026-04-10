@@ -336,3 +336,23 @@ def respond_transfer(request, pk, action):
         messages.warning(request, f'Transfer rejected for Case #{transfer.patient_event.id}.')
 
     return redirect('incoming_transfers')
+
+# 12. Hospital Admin — Notifications
+@login_required
+def hospital_notifications(request):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospital = request.user.hospital
+
+    if not hospital:
+        messages.error(request, 'No hospital assigned.')
+        return redirect('dashboard')
+
+    notifications = Notification.objects.filter(hospital=hospital).order_by('-sent_at')
+
+    return render(request, 'core/notifications.html', {
+        'notifications': notifications,
+        'hospital': hospital,
+    })

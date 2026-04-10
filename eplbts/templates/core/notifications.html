@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>🔔 Notifications</h3>
+<p class="text-muted">Hospital: <strong>{{ hospital.name }}</strong></p>
+<hr>
+
+{% if notifications %}
+{% for notif in notifications %}
+<div class="card mb-2 {% if notif.status == 'sent' %}border-success{% else %}border-danger{% endif %}">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>🔔</strong> {{ notif.message }}
+            </div>
+            <div>
+                <small class="text-muted">{{ notif.sent_at|timesince }} ago</small>
+                <span class="badge bg-{% if notif.status == 'sent' %}success{% else %}danger{% endif %} ms-2">
+                    {{ notif.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-info">
+    No notifications yet.
+</div>
+{% endif %}
+{% endblock %}
+</body>
+</html>
