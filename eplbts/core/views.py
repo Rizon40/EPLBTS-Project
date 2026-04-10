@@ -211,3 +211,128 @@ def recommend_hospitals(request, pk):
         'recommendations': recommendations,
         'map_data': map_data,
     })
+
+
+# 9. Paramedic — Create Transfer Request
+@login_required
+def create_transfer(request, event_pk, hospital_pk):
+    if request.user.role != 'paramedic':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    patient_event = get_object_or_404(PatientEvent, pk=event_pk)
+    hospital = get_object_or_404(Hospital, pk=hospital_pk)
+
+    # Check if transfer already exists
+    if TransferRequest.objects.filter(patient_event=patient_event).exists():
+        messages.warning(request, 'Transfer request already exists for this case.')
+        return redirect('pending_cases')
+
+    # Create Transfer Request
+    transfer = TransferRequest.objects.create(
+        patient_event=patient_event,
+        hospital=hospital,
+        requested_by=request.user,
+        status='pending'
+    )
+
+    # Update patient event status
+    patient_event.status = 'referred'
+    patient_event.save()
+
+    # Create Notification for hospital
+    Notification.objects.create(
+        hospital=hospital,
+        transfer_request=transfer,
+        message=f'New emergency transfer request: {patient_event.get_case_type_display()} — '
+                f'Patient Age: {patient_event.patient_age}, '
+                f'Location: {patient_event.location_text}',
+        status='sent'
+    )
+
+    # Audit Log
+    AuditLog.objects.create(
+        performed_by=request.user,
+        patient_event=patient_event,
+        transfer_request=transfer,
+        action='triage_submitted',
+        description=f'Transfer request sent to {hospital.name} for Case #{patient_event.id}'
+    )
+
+    messages.success(request, f'Transfer request sent to {hospital.name}!')
+    return redirect('pending_cases')
+
+
+# 10. Hospital Admin — Incoming Transfer Requests
+@login_required
+def incoming_transfers(request):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospital = request.user.hospital
+
+    if not hospital:
+        messages.error(request, 'No hospital assigned to your account.')
+        return redirect('dashboard')
+
+    transfers = TransferRequest.objects.filter(hospital=hospital).order_by('-created_at')
+
+    return render(request, 'core/incoming_transfers.html', {
+        'transfers': transfers,
+        'hospital': hospital,
+    })
+
+# 11. Hospital Admin — Accept/Reject Transfer
+@login_required
+def respond_transfer(request, pk, action):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    transfer = get_object_or_404(TransferRequest, pk=pk)
+
+    # Verify this transfer belongs to admin's hospital
+    if transfer.hospital != request.user.hospital:
+        messages.error(request, 'Access denied. This transfer is not for your hospital.')
+        return redirect('incoming_transfers')
+
+    if action == 'accept':
+        transfer.status = 'accepted'
+        transfer.save()
+
+        # Update patient event
+        transfer.patient_event.status = 'transferred'
+        transfer.patient_event.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            performed_by=request.user,
+            patient_event=transfer.patient_event,
+            transfer_request=transfer,
+            action='transfer_accepted',
+            description=f'{request.user.hospital.name} accepted Case #{transfer.patient_event.id}'
+        )
+
+        messages.success(request, f'Transfer accepted for Case #{transfer.patient_event.id}!')
+
+    elif action == 'reject':
+        transfer.status = 'rejected'
+        transfer.save()
+
+        # Reset patient event to pending
+        transfer.patient_event.status = 'pending'
+        transfer.patient_event.save()
+
+        # Audit Log
+        AuditLog.objects.create(
+            performed_by=request.user,
+            patient_event=transfer.patient_event,
+            transfer_request=transfer,
+            action='transfer_rejected',
+            description=f'{request.user.hospital.name} rejected Case #{transfer.patient_event.id}'
+        )
+
+        messages.warning(request, f'Transfer rejected for Case #{transfer.patient_event.id}.')
+
+    return redirect('incoming_transfers')
