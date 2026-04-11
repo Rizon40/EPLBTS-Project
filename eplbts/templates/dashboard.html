@@ -14,12 +14,29 @@
 
 <div class="row g-3 mt-2">
 
+    {% if user.is_patient %}
+    <div class="col-md-4">
+        <div class="card border-warning text-center p-3">
+            <h5>🆘 SOS Emergency</h5>
+            <p class="text-muted small">Request emergency ambulance</p>
+            <a href="{% url 'sos_emergency' %}" class="btn btn-warning btn-sm">Go →</a>
+        </div>
+    </div>
+    {% endif %}
+
     {% if user.is_paramedic %}
     <div class="col-md-4">
         <div class="card border-danger text-center p-3">
             <h5>📝 Submit Triage</h5>
             <p class="text-muted small">Submit a new emergency case</p>
-            <a href="#" class="btn btn-danger btn-sm">Go →</a>
+            <a href="{% url 'submit_triage' %}" class="btn btn-danger btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info text-center p-3">
+            <h5>📋 Pending Cases</h5>
+            <p class="text-muted small">View and assign pending emergencies</p>
+            <a href="{% url 'pending_cases' %}" class="btn btn-info btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
@@ -29,7 +46,21 @@
         <div class="card border-primary text-center p-3">
             <h5>🏥 Update Hospital Status</h5>
             <p class="text-muted small">Update ICU and bed availability</p>
-            <a href="#" class="btn btn-primary btn-sm">Go →</a>
+            <a href="{% url 'update_hospital_status' %}" class="btn btn-primary btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-warning text-center p-3">
+            <h5>📋 Transfer Requests</h5>
+            <p class="text-muted small">View incoming patient transfers</p>
+            <a href="{% url 'incoming_transfers' %}" class="btn btn-warning btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-secondary text-center p-3">
+            <h5>🔔 Notifications</h5>
+            <p class="text-muted small">View emergency alerts</p>
+            <a href="{% url 'hospital_notifications' %}" class="btn btn-secondary btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
@@ -39,7 +70,7 @@
         <div class="card border-success text-center p-3">
             <h5>📊 Monitor Dashboard</h5>
             <p class="text-muted small">View hospital load and trends</p>
-            <a href="#" class="btn btn-success btn-sm">Go →</a>
+            <a href="{% url 'hospital_list' %}" class="btn btn-success btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
