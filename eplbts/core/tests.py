@@ -6,11 +6,11 @@ from .models import (
     TransferRequest, Notification, AuditLog
 )
 from .forms import TriageForm, HospitalStatusForm, SOSForm
+from .recommendation import haversine_distance, estimate_eta, get_hospital_recommendations
 
 User = get_user_model()
 
 # PART 1 — Hospital & HospitalStatus Model Tests
-
 class HospitalModelTest(TestCase):
 
     def setUp(self):
@@ -82,11 +82,9 @@ class HospitalStatusModelTest(TestCase):
         self.assertTrue(self.status.is_accepting)
 
     def test_icu_load_percent(self):
-        # (20-5)/20 * 100 = 75%
         self.assertEqual(self.status.icu_load_percent, 75)
 
     def test_bed_load_percent(self):
-        # (100-30)/100 * 100 = 70%
         self.assertEqual(self.status.bed_load_percent, 70)
 
     def test_icu_load_when_total_zero_returns_100(self):
@@ -143,7 +141,7 @@ class HospitalAdminAssignmentTest(TestCase):
         )
         self.assertEqual(User.objects.filter(hospital=self.hospital).count(), 2)
 
-# PART 2 — Hospital Status View & Form Tests
+
 class HospitalStatusFormTest(TestCase):
 
     def test_valid_form(self):
@@ -450,3 +448,128 @@ class SOSEmergencyViewTest(TestCase):
     def test_sos_creates_audit_log(self):
         self.client.post(reverse('sos_emergency'), self.get_sos_data())
         self.assertTrue(AuditLog.objects.filter(action='triage_submitted').exists())
+
+
+# STAGE 3 UNIT TESTS — NEW (minimal)
+class RecommendationTest(TestCase):
+
+    def setUp(self):
+        self.para = User.objects.create_user(
+            username='rec_para', password='Pass1234!', role='paramedic')
+        self.admin = User.objects.create_user(
+            username='rec_admin', password='Pass1234!', role='hospital_admin')
+        self.h1 = Hospital.objects.create(
+            name='Near Hospital', address='Mirpur',
+            latitude=23.82, longitude=90.42, phone_number='01700000010')
+        HospitalStatus.objects.create(
+            hospital=self.h1, updated_by=self.admin,
+            icu_total=10, icu_available=5, bed_total=50, bed_available=20,
+            has_ventilator=True, is_accepting=True)
+        self.h_closed = Hospital.objects.create(
+            name='Closed Hospital', address='Dhaka',
+            latitude=23.75, longitude=90.38, phone_number='01700000012')
+        HospitalStatus.objects.create(
+            hospital=self.h_closed, updated_by=self.admin,
+            icu_total=10, icu_available=5, bed_total=50, bed_available=20,
+            is_accepting=False)
+        self.event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Mirpur', latitude=23.8103, longitude=90.4125,
+            status='pending')
+
+    def test_returns_results(self):
+        recs = get_hospital_recommendations(self.event)
+        self.assertGreaterEqual(len(recs), 1)
+
+    def test_excludes_not_accepting(self):
+        recs = get_hospital_recommendations(self.event)
+        names = [r['hospital'].name for r in recs]
+        self.assertNotIn('Closed Hospital', names)
+
+    def test_haversine_zero(self):
+        self.assertEqual(haversine_distance(23.81, 90.41, 23.81, 90.41), 0)
+
+    def test_eta_calculation(self):
+        self.assertEqual(estimate_eta(30), 60)
+
+
+class TransferRequestTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.para = User.objects.create_user(
+            username='tr_para', password='Pass1234!', role='paramedic')
+        self.hospital = Hospital.objects.create(
+            name='TR Hospital', address='Dhaka',
+            latitude=23.76, longitude=90.39, phone_number='01700000030')
+        self.admin = User.objects.create_user(
+            username='tr_admin', password='Pass1234!',
+            role='hospital_admin', hospital=self.hospital)
+        self.event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='respiratory',
+            patient_age=45, patient_gender='female',
+            location_text='Mohammadpur', status='pending')
+
+    def test_create_transfer(self):
+        self.client.login(username='tr_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer',
+                        kwargs={'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        self.assertEqual(TransferRequest.objects.count(), 1)
+
+    def test_transfer_creates_notification(self):
+        self.client.login(username='tr_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer',
+                        kwargs={'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        self.assertEqual(Notification.objects.count(), 1)
+
+    def test_accept_transfer(self):
+        self.client.login(username='tr_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer',
+                        kwargs={'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        transfer = TransferRequest.objects.first()
+        self.client.login(username='tr_admin', password='Pass1234!')
+        self.client.get(reverse('respond_transfer',
+                        kwargs={'pk': transfer.pk, 'action': 'accept'}))
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.status, 'accepted')
+
+    def test_reject_transfer(self):
+        self.client.login(username='tr_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer',
+                        kwargs={'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        transfer = TransferRequest.objects.first()
+        self.client.login(username='tr_admin', password='Pass1234!')
+        self.client.get(reverse('respond_transfer',
+                        kwargs={'pk': transfer.pk, 'action': 'reject'}))
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.status, 'rejected')
+
+
+class PendingCasesAndViewsTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.hospital = Hospital.objects.create(
+            name='View Hospital', address='Dhaka',
+            latitude=23.76, longitude=90.39, phone_number='01700000070')
+        self.para = User.objects.create_user(
+            username='v_para', password='Pass1234!', role='paramedic')
+        self.admin = User.objects.create_user(
+            username='v_admin', password='Pass1234!',
+            role='hospital_admin', hospital=self.hospital)
+
+    def test_pending_cases_access(self):
+        self.client.login(username='v_para', password='Pass1234!')
+        resp = self.client.get(reverse('pending_cases'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_incoming_transfers_access(self):
+        self.client.login(username='v_admin', password='Pass1234!')
+        resp = self.client.get(reverse('incoming_transfers'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_notifications_access(self):
+        self.client.login(username='v_admin', password='Pass1234!')
+        resp = self.client.get(reverse('hospital_notifications'))
+        self.assertEqual(resp.status_code, 200)
