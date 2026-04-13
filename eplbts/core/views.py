@@ -401,8 +401,47 @@ def add_hospital(request):
 
     return render(request, 'core/add_hospital.html')
 
+# 17. System Admin — Edit Hospital
+@login_required
+def edit_hospital(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
 
-# 13. System Admin — Manage Users
+    hospital = get_object_or_404(Hospital, pk=pk)
+
+    if request.method == 'POST':
+        hospital.name = request.POST.get('name', hospital.name)
+        hospital.address = request.POST.get('address', hospital.address)
+        hospital.latitude = float(request.POST.get('latitude', hospital.latitude))
+        hospital.longitude = float(request.POST.get('longitude', hospital.longitude))
+        hospital.phone_number = request.POST.get('phone_number', hospital.phone_number)
+        hospital.specialty = request.POST.get('specialty', hospital.specialty)
+        hospital.is_active = request.POST.get('is_active') == 'on'
+        hospital.save()
+
+        messages.success(request, f'Hospital "{hospital.name}" updated!')
+        return redirect('manage_hospitals')
+
+    return render(request, 'core/edit_hospital.html', {'hospital': hospital})
+
+
+
+# 18. System Admin — Delete Hospital
+@login_required
+def delete_hospital(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospital = get_object_or_404(Hospital, pk=pk)
+    name = hospital.name
+    hospital.delete()
+    messages.success(request, f'Hospital "{name}" deleted!')
+    return redirect('manage_hospitals')
+
+
+# 19. System Admin — Manage Users
 @login_required
 def manage_users(request):
     if request.user.role != 'admin':
@@ -418,7 +457,7 @@ def manage_users(request):
         'hospitals': hospitals,
     })
 
-# 14. System Admin — Edit User
+# 20. System Admin — Edit User
 @login_required
 def edit_user(request, pk):
     if request.user.role != 'admin':
@@ -447,7 +486,7 @@ def edit_user(request, pk):
         'hospitals': hospitals,
     })
 
-# 15. User Profile
+# 21. User Profile
 @login_required
 def user_profile(request):
     if request.method == 'POST':
