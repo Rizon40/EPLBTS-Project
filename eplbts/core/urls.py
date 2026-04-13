@@ -32,6 +32,14 @@ urlpatterns = [
     path('transfers/incoming/', views.incoming_transfers, name='incoming_transfers'),
     path('transfers/<int:pk>/<str:action>/',views.respond_transfer, name='respond_transfer'),
 
+    # Notifications
+    path('notifications/', views.hospital_notifications, name='hospital_notifications'),
+
+    # System Admin — Hospitals
+    path('system/hospitals/', views.manage_hospitals, name='manage_hospitals'),
+    path('system/hospitals/add/', views.add_hospital, name='add_hospital'),
+    path('system/hospitals/<int:pk>/edit/', views.edit_hospital, name='edit_hospital'),
+    path('system/hospitals/<int:pk>/delete/', views.delete_hospital, name='delete_hospital'),
 
     # System Admin — Users
     path('system/users/', views.manage_users, name='manage_users'),
