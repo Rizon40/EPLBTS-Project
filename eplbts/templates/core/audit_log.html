@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>📝 Audit Log</h3>
+<p class="text-muted">System-wide action history for accountability.</p>
+<hr>
+
+{% if logs %}
+<div class="table-responsive">
+    <table class="table table-bordered table-sm table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+                <th>Case ID</th>
+                <th>Transfer ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><small>{{ log.timestamp|date:"d M Y, H:i" }}</small></td>
+                <td>{{ log.performed_by|default:"Anonymous" }}</td>
+                <td>
+                    <span class="badge bg-{% if 'accepted' in log.action %}success{% elif 'rejected' in log.action %}danger{% elif 'submitted' in log.action %}primary{% elif 'viewed' in log.action %}info{% elif 'updated' in log.action %}warning{% else %}secondary{% endif %}">
+                        {{ log.get_action_display }}
+                    </span>
+                </td>
+                <td>{{ log.description }}</td>
+                <td>{% if log.patient_event %}#{{ log.patient_event.id }}{% else %}—{% endif %}</td>
+                <td>{% if log.transfer_request %}#{{ log.transfer_request.id }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">No audit logs yet.</div>
+{% endif %}
+{% endblock %}
+</body>
+</html>
