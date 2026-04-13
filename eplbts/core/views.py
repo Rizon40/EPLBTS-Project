@@ -420,6 +420,16 @@ def authority_dashboard(request):
         'case_type_stats': case_type_stats,
     })
 
+# 14. Audit Log View
+@login_required
+def audit_log_view(request):
+    if request.user.role not in ['authority', 'admin']:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    logs = AuditLog.objects.all()[:100]
+    return render(request, 'core/audit_log.html', {'logs': logs})
+
 
 # 15. System Admin — Manage Hospitals
 @login_required
