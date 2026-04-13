@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>✏️ Edit Hospital — {{ hospital.name }}</h3>
+<hr>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Hospital Name *</label>
+                        <input type="text" name="name" class="form-control" value="{{ hospital.name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address *</label>
+                        <textarea name="address" class="form-control" rows="2" required>{{ hospital.address }}</textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Latitude *</label>
+                            <input type="number" name="latitude" class="form-control" step="any" value="{{ hospital.latitude }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Longitude *</label>
+                            <input type="number" name="longitude" class="form-control" step="any" value="{{ hospital.longitude }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" name="phone_number" class="form-control" value="{{ hospital.phone_number }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Specialty</label>
+                        <select name="specialty" class="form-select">
+                            <option value="general" {% if hospital.specialty == 'general' %}selected{% endif %}>General</option>
+                            <option value="cardiac" {% if hospital.specialty == 'cardiac' %}selected{% endif %}>Cardiac</option>
+                            <option value="trauma" {% if hospital.specialty == 'trauma' %}selected{% endif %}>Trauma</option>
+                            <option value="neurology" {% if hospital.specialty == 'neurology' %}selected{% endif %}>Neurology</option>
+                            <option value="pediatric" {% if hospital.specialty == 'pediatric' %}selected{% endif %}>Pediatric</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="is_active" class="form-check-input" {% if hospital.is_active %}checked{% endif %}>
+                        <label class="form-check-label">Active</label>
+                    </div>
+
+                    <hr>
+                    <button type="submit" class="btn btn-warning btn-lg">💾 Update Hospital</button>
+                    <a href="{% url 'manage_hospitals' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>
