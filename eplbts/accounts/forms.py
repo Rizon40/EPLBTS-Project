@@ -10,13 +10,19 @@ class RegisterForm(UserCreationForm):
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'phone_number', 'role', 'password1', 'password2']
+        fields = ['username', 'email', 'phone_number', 'password1', 'password2']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Add Bootstrap styling to all fields
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = 'patient'
+        if commit:
+            user.save()
+        return user
 
 
 class LoginForm(forms.Form):

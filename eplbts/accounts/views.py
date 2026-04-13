@@ -1,7 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
-
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -58,4 +54,19 @@ def logout_view(request):
 
 @login_required
 def dashboard_view(request):
-    return render(request, 'dashboard.html', {'user': request.user})
+    context = {'user': request.user}
+
+    if request.user.role == 'paramedic':
+        from core.models import PatientEvent
+        context['pending_count'] = PatientEvent.objects.filter(status='pending').count()
+
+    if request.user.role == 'hospital_admin' and request.user.hospital:
+        from core.models import TransferRequest, Notification
+        context['pending_transfers'] = TransferRequest.objects.filter(
+            hospital=request.user.hospital, status='pending'
+        ).count()
+        context['unread_notifications'] = Notification.objects.filter(
+            hospital=request.user.hospital
+        ).count()
+
+    return render(request, 'dashboard.html', context)
