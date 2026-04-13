@@ -16,4 +16,12 @@ urlpatterns = [
     path('transfer/<int:event_pk>/<int:hospital_pk>/',views.create_transfer,name='create_transfer'),
     path('transfers/incoming/', views.incoming_transfers,name='incoming_transfers'),
     path('transfers/<int:pk>/<str:action>/',views.respond_transfer, name='respond_transfer'),
+
+
+    # System Admin — Users
+    path('system/users/', views.manage_users, name='manage_users'),
+    path('system/users/<int:pk>/edit/', views.edit_user, name='edit_user'),
+    path('system/users/<int:pk>/reset-password/', views.reset_user_password, name='reset_user_password'),
+    # Profile
+    path('profile/', views.user_profile, name='user_profile'),
 ]
