@@ -8,7 +8,6 @@ from .models import Hospital, HospitalStatus, PatientEvent, TransferRequest, Not
 
 
 # 1. Paramedic — Submit Triage
-
 @login_required
 def submit_triage(request):
     if request.user.role != 'paramedic':
@@ -52,6 +51,7 @@ def update_hospital_status(request):
         messages.error(request, 'Access denied. Only hospital admins can update status.')
         return redirect('dashboard')
 
+    # ← এখন user এর linked hospital নিবে
     hospital = request.user.hospital
 
     if not hospital:
@@ -212,7 +212,6 @@ def recommend_hospitals(request, pk):
         'map_data': map_data,
     })
 
-
 # 9. Paramedic — Create Transfer Request
 @login_required
 def create_transfer(request, event_pk, hospital_pk):
@@ -336,3 +335,40 @@ def respond_transfer(request, pk, action):
         messages.warning(request, f'Transfer rejected for Case #{transfer.patient_event.id}.')
 
     return redirect('incoming_transfers')
+
+# 12. Hospital Admin — Notifications
+@login_required
+def hospital_notifications(request):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospital = request.user.hospital
+
+    if not hospital:
+        messages.error(request, 'No hospital assigned.')
+        return redirect('dashboard')
+
+    notifications = Notification.objects.filter(hospital=hospital).order_by('-sent_at')
+
+    return render(request, 'core/notifications.html', {
+        'notifications': notifications,
+        'hospital': hospital,
+    })
+
+
+# 13. System Admin — Manage Users
+@login_required
+def manage_users(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    users = CustomUser.objects.all().order_by('-date_joined')
+    hospitals = Hospital.objects.filter(is_active=True)
+
+    return render(request, 'core/manage_users.html', {
+        'users': users,
+        'hospitals': hospitals,
+    })
