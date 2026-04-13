@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>✏️ Edit User — {{ edit_user.username }}</h3>
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ edit_user.username }}" disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="text" class="form-control" value="{{ edit_user.email }}" disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" class="form-select">
+                            <option value="patient" {% if edit_user.role == 'patient' %}selected{% endif %}>Patient / General User</option>
+                            <option value="paramedic" {% if edit_user.role == 'paramedic' %}selected{% endif %}>Paramedic / Ambulance Operator</option>
+                            <option value="hospital_admin" {% if edit_user.role == 'hospital_admin' %}selected{% endif %}>Hospital Administrator</option>
+                            <option value="authority" {% if edit_user.role == 'authority' %}selected{% endif %}>Authority / Monitoring Officer</option>
+                            <option value="admin" {% if edit_user.role == 'admin' %}selected{% endif %}>System Administrator</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Assigned Hospital</label>
+                        <select name="hospital" class="form-select">
+                            <option value="">— None —</option>
+                            {% for h in hospitals %}
+                            <option value="{{ h.id }}" {% if edit_user.hospital_id == h.id %}selected{% endif %}>{{ h.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Only for Hospital Administrators</small>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="is_active" class="form-check-input" {% if edit_user.is_active %}checked{% endif %}>
+                        <label class="form-check-label">Active Account</label>
+                    </div>
+
+                    <hr>
+                    <button type="submit" class="btn btn-warning btn-lg">💾 Update User</button>
+                    <a href="{% url 'manage_users' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>

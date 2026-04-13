@@ -50,6 +50,7 @@ def update_hospital_status(request):
         messages.error(request, 'Access denied. Only hospital admins can update status.')
         return redirect('dashboard')
 
+    # ← এখন user এর linked hospital নিবে
     hospital = request.user.hospital
 
     if not hospital:
@@ -210,7 +211,6 @@ def recommend_hospitals(request, pk):
         'map_data': map_data,
     })
 
-
 # 9. Paramedic — Create Transfer Request
 @login_required
 def create_transfer(request, event_pk, hospital_pk):
@@ -354,3 +354,89 @@ def hospital_notifications(request):
         'notifications': notifications,
         'hospital': hospital,
     })
+
+
+# 13. System Admin — Manage Users
+@login_required
+def manage_users(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    users = CustomUser.objects.all().order_by('-date_joined')
+    hospitals = Hospital.objects.filter(is_active=True)
+
+    return render(request, 'core/manage_users.html', {
+        'users': users,
+        'hospitals': hospitals,
+    })
+
+# 14. System Admin — Edit User
+@login_required
+def edit_user(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+    hospitals = Hospital.objects.filter(is_active=True)
+
+    if request.method == 'POST':
+        user.role = request.POST.get('role', user.role)
+        hospital_id = request.POST.get('hospital')
+        if hospital_id:
+            user.hospital = Hospital.objects.get(pk=hospital_id)
+        else:
+            user.hospital = None
+        user.is_active = request.POST.get('is_active') == 'on'
+        user.save()
+
+        messages.success(request, f'User "{user.username}" updated!')
+        return redirect('manage_users')
+
+    return render(request, 'core/edit_user.html', {
+        'edit_user': user,
+        'hospitals': hospitals,
+    })
+
+# 15. User Profile
+@login_required
+def user_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
+        user.phone_number = request.POST.get('phone_number', '')
+        user.save()
+
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('user_profile')
+
+    return render(request, 'core/user_profile.html')
+
+# 22. System Admin — Reset User Password
+@login_required
+def reset_user_password(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if new_password and new_password == confirm_password:
+            user.set_password(new_password)
+            user.save()
+            messages.success(request, f'Password reset for "{user.username}" successfully!')
+            return redirect('manage_users')
+        else:
+            messages.error(request, 'Passwords do not match.')
+
+    return render(request, 'core/reset_user_password.html', {'reset_user': user})
