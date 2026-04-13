@@ -372,3 +372,32 @@ def manage_users(request):
         'users': users,
         'hospitals': hospitals,
     })
+
+# 14. System Admin — Edit User
+@login_required
+def edit_user(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+    hospitals = Hospital.objects.filter(is_active=True)
+
+    if request.method == 'POST':
+        user.role = request.POST.get('role', user.role)
+        hospital_id = request.POST.get('hospital')
+        if hospital_id:
+            user.hospital = Hospital.objects.get(pk=hospital_id)
+        else:
+            user.hospital = None
+        user.is_active = request.POST.get('is_active') == 'on'
+        user.save()
+
+        messages.success(request, f'User "{user.username}" updated!')
+        return redirect('manage_users')
+
+    return render(request, 'core/edit_user.html', {
+        'edit_user': user,
+        'hospitals': hospitals,
+    })
