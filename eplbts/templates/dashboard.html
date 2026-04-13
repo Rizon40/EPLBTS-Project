@@ -22,6 +22,13 @@
             <a href="{% url 'sos_emergency' %}" class="btn btn-warning btn-sm">Go →</a>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card border-primary text-center p-3">
+            <h5>🏥 Find Hospital</h5>
+            <p class="text-muted small">View hospitals and distances</p>
+            <a href="{% url 'hospital_list' %}" class="btn btn-primary btn-sm">Go →</a>
+        </div>
+    </div>
     {% endif %}
 
     {% if user.is_paramedic %}
@@ -36,7 +43,17 @@
         <div class="card border-info text-center p-3">
             <h5>📋 Pending Cases</h5>
             <p class="text-muted small">View and assign pending emergencies</p>
+            {% if pending_count %}
+            <span class="badge bg-danger mb-2" style="font-size: 1.2rem;">{{ pending_count }} pending</span>
+            {% endif %}
             <a href="{% url 'pending_cases' %}" class="btn btn-info btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-primary text-center p-3">
+            <h5>🏥 View Hospitals</h5>
+            <p class="text-muted small">Hospital list with map</p>
+            <a href="{% url 'hospital_list' %}" class="btn btn-primary btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
@@ -53,6 +70,9 @@
         <div class="card border-warning text-center p-3">
             <h5>📋 Transfer Requests</h5>
             <p class="text-muted small">View incoming patient transfers</p>
+            {% if pending_transfers %}
+            <span class="badge bg-danger mb-2" style="font-size: 1.2rem;">{{ pending_transfers }} pending</span>
+            {% endif %}
             <a href="{% url 'incoming_transfers' %}" class="btn btn-warning btn-sm">Go →</a>
         </div>
     </div>
@@ -60,6 +80,9 @@
         <div class="card border-secondary text-center p-3">
             <h5>🔔 Notifications</h5>
             <p class="text-muted small">View emergency alerts</p>
+            {% if unread_notifications %}
+            <span class="badge bg-danger mb-2" style="font-size: 1.2rem;">{{ unread_notifications }} alerts</span>
+            {% endif %}
             <a href="{% url 'hospital_notifications' %}" class="btn btn-secondary btn-sm">Go →</a>
         </div>
     </div>
@@ -69,18 +92,46 @@
     <div class="col-md-4">
         <div class="card border-success text-center p-3">
             <h5>📊 Monitor Dashboard</h5>
-            <p class="text-muted small">View hospital load and trends</p>
-            <a href="{% url 'hospital_list' %}" class="btn btn-success btn-sm">Go →</a>
+            <p class="text-muted small">View statistics and trends</p>
+            <a href="{% url 'authority_dashboard' %}" class="btn btn-success btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-primary text-center p-3">
+            <h5>🏥 View Hospitals</h5>
+            <p class="text-muted small">Hospital list with status</p>
+            <a href="{% url 'hospital_list' %}" class="btn btn-primary btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-dark text-center p-3">
+            <h5>📝 Audit Logs</h5>
+            <p class="text-muted small">View system action history</p>
+            <a href="{% url 'audit_log' %}" class="btn btn-dark btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
 
     {% if user.is_system_admin %}
     <div class="col-md-4">
+        <div class="card border-success text-center p-3">
+            <h5>🏥 Manage Hospitals</h5>
+            <p class="text-muted small">Add, edit, remove hospitals</p>
+            <a href="{% url 'manage_hospitals' %}" class="btn btn-success btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-primary text-center p-3">
+            <h5>👥 Manage Users</h5>
+            <p class="text-muted small">View and manage user accounts</p>
+            <a href="{% url 'manage_users' %}" class="btn btn-primary btn-sm">Go →</a>
+        </div>
+    </div>
+    <div class="col-md-4">
         <div class="card border-dark text-center p-3">
-            <h5>⚙️ Admin Panel</h5>
-            <p class="text-muted small">Manage users and system settings</p>
-            <a href="/admin/" class="btn btn-dark btn-sm">Go →</a>
+            <h5>📝 Audit Logs</h5>
+            <p class="text-muted small">View system action history</p>
+            <a href="{% url 'audit_log' %}" class="btn btn-dark btn-sm">Go →</a>
         </div>
     </div>
     {% endif %}
