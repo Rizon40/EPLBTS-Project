@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>➕ Add New Hospital</h3>
+<hr>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Hospital Name *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address *</label>
+                        <textarea name="address" class="form-control" rows="2" required></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Latitude *</label>
+                            <input type="number" name="latitude" class="form-control" step="any" id="add_lat" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Longitude *</label>
+                            <input type="number" name="longitude" class="form-control" step="any" id="add_lng" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" name="phone_number" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Specialty</label>
+                        <select name="specialty" class="form-select">
+                            <option value="general">General</option>
+                            <option value="cardiac">Cardiac</option>
+                            <option value="trauma">Trauma</option>
+                            <option value="neurology">Neurology</option>
+                            <option value="pediatric">Pediatric</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="detectHospitalLocation()">
+                        📍 Auto-Detect Location
+                    </button>
+                    <span id="hospLocStatus" class="text-muted small ms-2"></span>
+
+                    <hr>
+                    <button type="submit" class="btn btn-success btn-lg">💾 Add Hospital</button>
+                    <a href="{% url 'manage_hospitals' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function detectHospitalLocation() {
+    var statusEl = document.getElementById('hospLocStatus');
+    statusEl.textContent = 'Detecting...';
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        document.getElementById('add_lat').value = position.coords.latitude.toFixed(5);
+        document.getElementById('add_lng').value = position.coords.longitude.toFixed(5);
+        statusEl.textContent = 'Location detected!';
+    }, function() {
+        statusEl.textContent = 'Location access denied.';
+    });
+}
+</script>
+{% endblock %}
+</body>
+</html>
