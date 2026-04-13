@@ -356,6 +356,52 @@ def hospital_notifications(request):
     })
 
 
+
+
+# 15. System Admin — Manage Hospitals
+@login_required
+def manage_hospitals(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    hospitals = Hospital.objects.all()
+    return render(request, 'core/manage_hospitals.html', {'hospitals': hospitals})
+
+
+# 16. System Admin — Add Hospital
+@login_required
+def add_hospital(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        address = request.POST.get('address')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        phone_number = request.POST.get('phone_number')
+        specialty = request.POST.get('specialty')
+
+        if name and address and latitude and longitude:
+            Hospital.objects.create(
+                name=name,
+                address=address,
+                latitude=float(latitude),
+                longitude=float(longitude),
+                phone_number=phone_number or '',
+                specialty=specialty or 'general',
+                is_active=True,
+            )
+            messages.success(request, f'Hospital "{name}" added successfully!')
+            return redirect('manage_hospitals')
+        else:
+            messages.error(request, 'Please fill all required fields.')
+
+    return render(request, 'core/add_hospital.html')
+
+
 # 13. System Admin — Manage Users
 @login_required
 def manage_users(request):
