@@ -417,3 +417,27 @@ def user_profile(request):
         return redirect('user_profile')
 
     return render(request, 'core/user_profile.html')
+
+# 22. System Admin — Reset User Password
+@login_required
+def reset_user_password(request, pk):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if new_password and new_password == confirm_password:
+            user.set_password(new_password)
+            user.save()
+            messages.success(request, f'Password reset for "{user.username}" successfully!')
+            return redirect('manage_users')
+        else:
+            messages.error(request, 'Passwords do not match.')
+
+    return render(request, 'core/reset_user_password.html', {'reset_user': user})
