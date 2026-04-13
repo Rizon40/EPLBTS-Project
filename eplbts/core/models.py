@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.conf import settings
 
@@ -54,9 +53,9 @@ class HospitalStatus(models.Model):
 
     has_ventilator   = models.BooleanField(default=False)
     has_blood_bank   = models.BooleanField(default=False)
-    has_cath_lab     = models.BooleanField(default=False)
+    has_cath_lab     = models.BooleanField(default=False)   # cardiac lab
 
-    is_accepting     = models.BooleanField(default=True)
+    is_accepting     = models.BooleanField(default=True)    # accepting patients?
 
     updated_at       = models.DateTimeField(auto_now=True)
 
@@ -77,7 +76,6 @@ class HospitalStatus(models.Model):
         if self.bed_total == 0:
             return 100
         return round(((self.bed_total - self.bed_available) / self.bed_total) * 100)
-
 
 
 # 3. PatientEvent (Emergency triage case)

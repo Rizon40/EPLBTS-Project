@@ -3,7 +3,6 @@ from .models import PatientEvent, HospitalStatus, Hospital
 
 
 # 1. Paramedic Triage Form
-
 class TriageForm(forms.ModelForm):
 
     class Meta:
@@ -51,7 +50,7 @@ class HospitalStatusForm(forms.ModelForm):
             'is_accepting':   forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# 3. Patient SOS Emergency Form
+# 3. Patient SOS Emergency Form (Without Login)
 class SOSForm(forms.ModelForm):
 
     phone_number = forms.CharField(
@@ -62,6 +61,15 @@ class SOSForm(forms.ModelForm):
             'placeholder': 'e.g. 01712345678'
         }),
         label='Contact Phone Number'
+    )
+
+    location_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter Your Location'
+        }),
+        label='Your Location (Optional)'
     )
 
     class Meta:
@@ -76,5 +84,4 @@ class SOSForm(forms.ModelForm):
             'description':    forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Briefly describe the emergency'}),
             'patient_age':    forms.NumberInput(attrs={'class': 'form-control'}),
             'patient_gender': forms.Select(attrs={'class': 'form-select'}),
-            'location_text':  forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your current location'}),
         }

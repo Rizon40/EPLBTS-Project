@@ -57,6 +57,10 @@
                             {{ form.longitude }}
                         </div>
                     </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="autoDetectLocation()">
+                        📍 Auto-Detect My Location
+                    </button>
+                    <span id="locStatus" class="text-muted small ms-2"></span>
 
                     <h5 class="text-warning mb-3 mt-4">⚕️ Required Facilities</h5>
 
@@ -94,6 +98,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    function autoDetectLocation() {
+        var statusEl = document.getElementById('locStatus');
+        statusEl.textContent = 'Detecting location...';
+
+        if (!navigator.geolocation) {
+            statusEl.textContent = 'Geolocation not supported.';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            document.getElementById('id_latitude').value = position.coords.latitude.toFixed(5);
+            document.getElementById('id_longitude').value = position.coords.longitude.toFixed(5);
+            statusEl.textContent = 'Location detected!';
+        }, function (error) {
+            statusEl.textContent = 'Location access denied.';
+        });
+    }
+</script>
 {% endblock %}
 </body>
 </html>

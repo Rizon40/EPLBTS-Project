@@ -45,6 +45,15 @@
                         {{ form.location_text }}
                     </div>
 
+                    <!-- Hidden lat/lng fields -->
+                    <input type="hidden" name="latitude" id="sos_latitude">
+                    <input type="hidden" name="longitude" id="sos_longitude">
+
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="autoDetectSOS()">
+                        📍 Auto-Detect My Location
+                    </button>
+                    <span id="sosLocStatus" class="text-muted small ms-2"></span>
+
                     <div class="mb-3">
                         <label class="form-label">Description (Optional)</label>
                         {{ form.description }}
@@ -58,6 +67,26 @@
         </div>
     </div>
 </div>
+
+<script>
+function autoDetectSOS() {
+    var statusEl = document.getElementById('sosLocStatus');
+    statusEl.textContent = 'Detecting location...';
+
+    if (!navigator.geolocation) {
+        statusEl.textContent = 'Geolocation not supported.';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        document.getElementById('sos_latitude').value = position.coords.latitude.toFixed(5);
+        document.getElementById('sos_longitude').value = position.coords.longitude.toFixed(5);
+        statusEl.textContent = 'Location detected!';
+    }, function(error) {
+        statusEl.textContent = 'Location access denied.';
+    });
+}
+</script>
 {% endblock %}
 </body>
 </html>
