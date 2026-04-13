@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>👤 My Profile</h3>
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                Profile Information
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                        <small class="text-muted">Username cannot be changed</small>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" name="phone_number" class="form-control" value="{{ user.phone_number|default:'' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" value="{{ user.get_role_display }}" disabled>
+                    </div>
+
+                    {% if user.hospital %}
+                    <div class="mb-3">
+                        <label class="form-label">Assigned Hospital</label>
+                        <input type="text" class="form-control" value="{{ user.hospital.name }}" disabled>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    <button type="submit" class="btn btn-primary">💾 Update Profile</button>
+                    <a href="{% url 'change_password' %}" class="btn btn-outline-warning ms-2">🔑 Change Password</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                Account Details
+            </div>
+            <div class="card-body p-4">
+                <p><strong>Account Created:</strong> {{ user.date_joined|date:"d M Y, H:i" }}</p>
+                <p><strong>Last Login:</strong> {{ user.last_login|date:"d M Y, H:i" }}</p>
+                <p><strong>Status:</strong>
+                    {% if user.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-danger">Inactive</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>
