@@ -355,7 +355,70 @@ def hospital_notifications(request):
         'hospital': hospital,
     })
 
+# 13. Authority — Monitoring Dashboard
+@login_required
+def authority_dashboard(request):
+    if request.user.role != 'authority':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
 
+    total_cases = PatientEvent.objects.count()
+    pending_cases_count = PatientEvent.objects.filter(status='pending').count()
+    referred_cases = PatientEvent.objects.filter(status='referred').count()
+    transferred_cases = PatientEvent.objects.filter(status='transferred').count()
+    completed_cases = PatientEvent.objects.filter(status='completed').count()
+
+    total_hospitals = Hospital.objects.filter(is_active=True).count()
+    accepting_hospitals = 0
+    overloaded_hospitals = 0
+
+    hospitals = Hospital.objects.filter(is_active=True)
+    hospital_data = []
+
+    for h in hospitals:
+        status = HospitalStatus.objects.filter(hospital=h).first()
+        if status:
+            if status.is_accepting:
+                accepting_hospitals += 1
+            if status.icu_available <= 0 or status.bed_available <= 0:
+                overloaded_hospitals += 1
+            hospital_data.append({
+                'hospital': h,
+                'status': status,
+            })
+        else:
+            hospital_data.append({
+                'hospital': h,
+                'status': None,
+            })
+
+    total_transfers = TransferRequest.objects.count()
+    accepted_transfers = TransferRequest.objects.filter(status='accepted').count()
+    rejected_transfers = TransferRequest.objects.filter(status='rejected').count()
+    pending_transfers = TransferRequest.objects.filter(status='pending').count()
+
+    recent_cases = PatientEvent.objects.all()[:10]
+
+    from django.db.models import Count
+    case_type_stats = PatientEvent.objects.values('case_type').annotate(count=Count('id')).order_by('-count')
+
+    return render(request, 'core/authority_dashboard.html', {
+        'total_cases': total_cases,
+        'pending_cases_count': pending_cases_count,
+        'referred_cases': referred_cases,
+        'transferred_cases': transferred_cases,
+        'completed_cases': completed_cases,
+        'total_hospitals': total_hospitals,
+        'accepting_hospitals': accepting_hospitals,
+        'overloaded_hospitals': overloaded_hospitals,
+        'hospital_data': hospital_data,
+        'total_transfers': total_transfers,
+        'accepted_transfers': accepted_transfers,
+        'rejected_transfers': rejected_transfers,
+        'pending_transfers': pending_transfers,
+        'recent_cases': recent_cases,
+        'case_type_stats': case_type_stats,
+    })
 
 
 # 15. System Admin — Manage Hospitals
