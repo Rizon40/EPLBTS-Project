@@ -6,7 +6,7 @@ urlpatterns = [
     path('', lambda request: redirect('dashboard'), name='home'),
 
     # Paramedic
-    path('triage/submit/',  views.submit_triage, name='submit_triage'),
+    path('triage/submit/', views.submit_triage, name='submit_triage'),
     path('triage/success/<int:pk>/', views.triage_success, name='triage_success'),
 
     # Hospital Admin
@@ -30,13 +30,16 @@ urlpatterns = [
 
     # Hospital Admin — Transfers
     path('transfers/incoming/', views.incoming_transfers, name='incoming_transfers'),
-    path('transfers/<int:pk>/<str:action>/',views.respond_transfer, name='respond_transfer'),
+    path('transfers/<int:pk>/<str:action>/', views.respond_transfer, name='respond_transfer'),
 
     # Notifications
     path('notifications/', views.hospital_notifications, name='hospital_notifications'),
 
     # Authority Dashboard
     path('authority/dashboard/', views.authority_dashboard, name='authority_dashboard'),
+
+    # Audit Log
+    path('audit/', views.audit_log_view, name='audit_log'),
 
     # System Admin — Hospitals
     path('system/hospitals/', views.manage_hospitals, name='manage_hospitals'),
@@ -48,6 +51,7 @@ urlpatterns = [
     path('system/users/', views.manage_users, name='manage_users'),
     path('system/users/<int:pk>/edit/', views.edit_user, name='edit_user'),
     path('system/users/<int:pk>/reset-password/', views.reset_user_password, name='reset_user_password'),
+
     # Profile
     path('profile/', views.user_profile, name='user_profile'),
 ]
