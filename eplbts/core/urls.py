@@ -35,6 +35,9 @@ urlpatterns = [
     # Notifications
     path('notifications/', views.hospital_notifications, name='hospital_notifications'),
 
+    # Authority Dashboard
+    path('authority/dashboard/', views.authority_dashboard, name='authority_dashboard'),
+
     # System Admin — Hospitals
     path('system/hospitals/', views.manage_hospitals, name='manage_hospitals'),
     path('system/hospitals/add/', views.add_hospital, name='add_hospital'),

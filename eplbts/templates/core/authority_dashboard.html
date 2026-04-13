@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>📊 Authority Monitoring Dashboard</h3>
+<p class="text-muted">Real-time overview of emergency operations.</p>
+<hr>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h2>{{ total_cases }}</h2>
+            <small>Total Cases</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark text-center p-3">
+            <h2>{{ pending_cases_count }}</h2>
+            <small>Pending Cases</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h2>{{ referred_cases }}</h2>
+            <small>Referred Cases</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h2>{{ transferred_cases }}</h2>
+            <small>Transferred Cases</small>
+        </div>
+    </div>
+</div>
+
+<!-- Hospital & Transfer Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary text-center p-3">
+            <h2 class="text-primary">{{ total_hospitals }}</h2>
+            <small>Total Hospitals</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success text-center p-3">
+            <h2 class="text-success">{{ accepting_hospitals }}</h2>
+            <small>Accepting Patients</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger text-center p-3">
+            <h2 class="text-danger">{{ overloaded_hospitals }}</h2>
+            <small>Overloaded Hospitals</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning text-center p-3">
+            <h2 class="text-warning">{{ pending_transfers }}</h2>
+            <small>Pending Transfers</small>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-success text-center p-3">
+            <h3 class="text-success">{{ accepted_transfers }}</h3>
+            <small>Accepted Transfers</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger text-center p-3">
+            <h3 class="text-danger">{{ rejected_transfers }}</h3>
+            <small>Rejected Transfers</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info text-center p-3">
+            <h3 class="text-info">{{ total_transfers }}</h3>
+            <small>Total Transfers</small>
+        </div>
+    </div>
+</div>
+
+<!-- Case Type Breakdown -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                📈 Emergency Type Breakdown
+            </div>
+            <div class="card-body">
+                {% for stat in case_type_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ stat.case_type }}</span>
+                    <span class="badge bg-primary">{{ stat.count }} cases</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-primary" style="width: {% widthratio stat.count total_cases 100 %}%"></div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No cases yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Hospital Load Overview -->
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                🏥 Hospital Load Overview
+            </div>
+            <div class="card-body">
+                {% for item in hospital_data %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ item.hospital.name }}</strong>
+                        {% if item.status %}
+                        {% if item.status.is_accepting %}
+                        <span class="badge bg-success">Accepting</span>
+                        {% else %}
+                        <span class="badge bg-danger">Not Accepting</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="badge bg-secondary">No Data</span>
+                        {% endif %}
+                    </div>
+                    {% if item.status %}
+                    <small class="text-muted">ICU: {{ item.status.icu_available }}/{{ item.status.icu_total }} | Beds: {{ item.status.bed_available }}/{{ item.status.bed_total }}</small>
+                    <div class="progress mt-1" style="height: 8px;">
+                        <div class="progress-bar bg-{% if item.status.bed_load_percent < 50 %}success{% elif item.status.bed_load_percent < 80 %}warning{% else %}danger{% endif %}"
+                             style="width: {{ item.status.bed_load_percent }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Cases -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-dark text-white">
+        📋 Recent Emergency Cases
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Patient</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in recent_cases %}
+                    <tr>
+                        <td>#{{ case.id }}</td>
+                        <td>{{ case.get_case_type_display }}</td>
+                        <td>{{ case.patient_age }} yrs, {{ case.get_patient_gender_display }}</td>
+                        <td>{{ case.location_text|default:"Auto-detected" }}</td>
+                        <td>
+                            <span class="badge bg-{% if case.status == 'pending' %}warning{% elif case.status == 'referred' %}info{% elif case.status == 'transferred' %}success{% else %}secondary{% endif %}">
+                                {{ case.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ case.created_at|timesince }} ago</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'audit_log' %}" class="btn btn-outline-dark">📝 View Audit Logs</a>
+<a href="{% url 'hospital_list' %}" class="btn btn-outline-primary">🏥 View Hospital List</a>
+{% endblock %}
+</body>
+</html>
