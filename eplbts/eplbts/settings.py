@@ -130,6 +130,15 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Real Email Setup (Gmail)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = '22201173@uap-bd.edu'
+EMAIL_HOST_PASSWORD = 'kzxp vfut pqch tlsu'
+DEFAULT_FROM_EMAIL = 'EPLBTS System <22201173@uap-bd.edu>'
+
 
 # Custom user model
 AUTH_USER_MODEL = 'accounts.CustomUser'
