@@ -10,6 +10,8 @@ from .recommendation import haversine_distance, estimate_eta, get_hospital_recom
 
 User = get_user_model()
 
+
+# STAGE 2 UNIT TESTS
 # PART 1 — Hospital & HospitalStatus Model Tests
 class HospitalModelTest(TestCase):
 
@@ -450,7 +452,7 @@ class SOSEmergencyViewTest(TestCase):
         self.assertTrue(AuditLog.objects.filter(action='triage_submitted').exists())
 
 
-# STAGE 3 UNIT TESTS — NEW (minimal)
+# STAGE 3 UNIT TESTS
 class RecommendationTest(TestCase):
 
     def setUp(self):
@@ -573,3 +575,149 @@ class PendingCasesAndViewsTest(TestCase):
         self.client.login(username='v_admin', password='Pass1234!')
         resp = self.client.get(reverse('hospital_notifications'))
         self.assertEqual(resp.status_code, 200)
+
+
+# STAGE 4 UNIT TESTS — NEW
+class AuthorityDashboardTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.authority = User.objects.create_user(
+            username='auth1', password='Pass1234!', role='authority')
+        self.para = User.objects.create_user(
+            username='para1', password='Pass1234!', role='paramedic')
+
+    def test_authority_can_access(self):
+        self.client.login(username='auth1', password='Pass1234!')
+        resp = self.client.get(reverse('authority_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_paramedic_cannot_access(self):
+        self.client.login(username='para1', password='Pass1234!')
+        resp = self.client.get(reverse('authority_dashboard'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_login_required(self):
+        resp = self.client.get(reverse('authority_dashboard'))
+        self.assertEqual(resp.status_code, 302)
+
+
+class AuditLogViewTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.authority = User.objects.create_user(
+            username='aud_auth', password='Pass1234!', role='authority')
+        self.para = User.objects.create_user(
+            username='aud_para', password='Pass1234!', role='paramedic')
+
+    def test_authority_can_access(self):
+        self.client.login(username='aud_auth', password='Pass1234!')
+        resp = self.client.get(reverse('audit_log'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_paramedic_cannot_access(self):
+        self.client.login(username='aud_para', password='Pass1234!')
+        resp = self.client.get(reverse('audit_log'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_login_required(self):
+        resp = self.client.get(reverse('audit_log'))
+        self.assertEqual(resp.status_code, 302)
+
+
+class ManageHospitalsTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='sys_admin', password='Pass1234!', role='admin')
+        self.para = User.objects.create_user(
+            username='mh_para', password='Pass1234!', role='paramedic')
+
+    def test_admin_can_access(self):
+        self.client.login(username='sys_admin', password='Pass1234!')
+        resp = self.client.get(reverse('manage_hospitals'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_paramedic_cannot_access(self):
+        self.client.login(username='mh_para', password='Pass1234!')
+        resp = self.client.get(reverse('manage_hospitals'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_add_hospital(self):
+        self.client.login(username='sys_admin', password='Pass1234!')
+        self.client.post(reverse('add_hospital'), {
+            'name': 'Unit Test Hospital',
+            'address': 'Dhaka',
+            'latitude': '23.80',
+            'longitude': '90.40',
+            'phone_number': '01700000099',
+            'specialty': 'general',
+        })
+        self.assertTrue(Hospital.objects.filter(name='Unit Test Hospital').exists())
+
+    def test_delete_hospital(self):
+        self.client.login(username='sys_admin', password='Pass1234!')
+        h = Hospital.objects.create(
+            name='Delete Me', address='Dhaka',
+            latitude=23.80, longitude=90.40, phone_number='01700000098')
+        self.client.get(reverse('delete_hospital', kwargs={'pk': h.pk}))
+        self.assertFalse(Hospital.objects.filter(name='Delete Me').exists())
+
+
+class ManageUsersTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='mu_admin', password='Pass1234!', role='admin')
+        self.para = User.objects.create_user(
+            username='mu_para', password='Pass1234!', role='paramedic')
+
+    def test_admin_can_access(self):
+        self.client.login(username='mu_admin', password='Pass1234!')
+        resp = self.client.get(reverse('manage_users'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_paramedic_cannot_access(self):
+        self.client.login(username='mu_para', password='Pass1234!')
+        resp = self.client.get(reverse('manage_users'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_edit_user_role(self):
+        self.client.login(username='mu_admin', password='Pass1234!')
+        self.client.post(reverse('edit_user', kwargs={'pk': self.para.pk}), {
+            'role': 'hospital_admin',
+            'is_active': 'on',
+        })
+        self.para.refresh_from_db()
+        self.assertEqual(self.para.role, 'hospital_admin')
+
+
+class UserProfileTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='prof_user', password='Pass1234!', role='paramedic')
+
+    def test_profile_loads(self):
+        self.client.login(username='prof_user', password='Pass1234!')
+        resp = self.client.get(reverse('user_profile'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_login_required(self):
+        resp = self.client.get(reverse('user_profile'))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_update_profile(self):
+        self.client.login(username='prof_user', password='Pass1234!')
+        self.client.post(reverse('user_profile'), {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@test.com',
+            'phone_number': '01700000001',
+        })
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'Test')
