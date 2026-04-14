@@ -81,11 +81,24 @@ def create_test_users():
         }
     )
 
-    # Reset to pending if it was changed by previous test runs
     if not created:
         TransferRequest.objects.filter(patient_event=event).delete()
         event.status = "pending"
         event.save()
+
+    # --- Stage 4: Authority user ---
+    auth_user, _ = User.objects.get_or_create(username="auth_user")
+    auth_user.set_password("TestPass123!")
+    auth_user.is_active = True
+    auth_user.role = "authority"
+    auth_user.save()
+
+    # --- Stage 4: System Admin user ---
+    admin_user, _ = User.objects.get_or_create(username="sys_admin")
+    admin_user.set_password("TestPass123!")
+    admin_user.is_active = True
+    admin_user.role = "admin"
+    admin_user.save()
 
     yield
 
@@ -109,7 +122,9 @@ def do_login(driver, username, password="TestPass123!"):
     js_click(driver, driver.find_element(By.CSS_SELECTOR, "button[type='submit']"))
     time.sleep(2)
 
+
 # STAGE 2 TESTS (TEST 1-9)
+
 # TEST 1: Triage page loads for paramedic
 def test_triage_page_loads_for_paramedic():
     driver = get_driver()
@@ -254,6 +269,7 @@ def test_sos_form_submit_valid():
 
 
 # STAGE 3 TESTS (TEST 10-16)
+
 # TEST 10: Pending cases page loads for paramedic
 def test_pending_cases_page_loads():
     driver = get_driver()
@@ -292,7 +308,6 @@ def test_recommend_hospitals_shows_map_or_warning():
     driver.get(f"{BASE_URL}/cases/9999/recommend/")
     time.sleep(2)
     page = driver.page_source
-    # Map div present OR warning message shown — both are valid
     assert 'id="map"' in page or "No suitable hospitals" in page or "Best Match" in page
     driver.quit()
 
@@ -324,11 +339,193 @@ def test_create_transfer_request():
     driver.get(f"{BASE_URL}/cases/9999/recommend/")
     time.sleep(2)
 
-    # Click the first "Select This Hospital" button
     buttons = driver.find_elements(By.LINK_TEXT, "\U0001f691 Select This Hospital")
     if len(buttons) > 0:
         js_click(driver, buttons[0])
         time.sleep(2)
         page = driver.find_element(By.TAG_NAME, "body").text
         assert "Pending" in page or "Transfer" in page or "already exists" in page
+    driver.quit()
+
+
+# STAGE 4 TESTS (TEST 17-30)
+
+# --- Authority Dashboard ---
+# TEST 17: Authority dashboard loads for authority user
+def test_authority_dashboard_loads():
+    driver = get_driver()
+    do_login(driver, "auth_user")
+    driver.get(f"{BASE_URL}/authority/dashboard/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Dashboard" in page or "Authority" in page or "Cases" in page
+    driver.quit()
+
+
+# TEST 18: Authority dashboard without login redirects
+def test_authority_dashboard_without_login_redirects():
+    driver = get_driver()
+    driver.get(f"{BASE_URL}/authority/dashboard/")
+    time.sleep(2)
+    assert "/accounts/login/" in driver.current_url
+    driver.quit()
+
+
+# TEST 19: Paramedic cannot access authority dashboard
+def test_paramedic_cannot_access_authority_dashboard():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/authority/dashboard/")
+    time.sleep(1)
+    assert "/dashboard/" in driver.current_url
+    driver.quit()
+
+
+# --- Audit Log ---
+
+# TEST 20: Audit log loads for authority user
+def test_audit_log_loads():
+    driver = get_driver()
+    do_login(driver, "auth_user")
+    driver.get(f"{BASE_URL}/audit/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Audit" in page or "Log" in page
+    driver.quit()
+
+
+# TEST 21: Audit log without login redirects
+def test_audit_log_without_login_redirects():
+    driver = get_driver()
+    driver.get(f"{BASE_URL}/audit/")
+    time.sleep(2)
+    assert "/accounts/login/" in driver.current_url
+    driver.quit()
+
+
+# --- System Admin — Manage Hospitals ---
+
+# TEST 22: Manage hospitals loads for admin
+def test_manage_hospitals_loads():
+    driver = get_driver()
+    do_login(driver, "sys_admin")
+    driver.get(f"{BASE_URL}/system/hospitals/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Hospital" in page or "Manage" in page
+    driver.quit()
+
+
+# TEST 23: Add hospital page loads for admin
+def test_add_hospital_page_loads():
+    driver = get_driver()
+    do_login(driver, "sys_admin")
+    driver.get(f"{BASE_URL}/system/hospitals/add/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Add" in page or "Hospital" in page
+    driver.quit()
+
+
+# TEST 24: Add hospital form submit
+def test_add_hospital_form_submit():
+    driver = get_driver()
+    do_login(driver, "sys_admin")
+    driver.get(f"{BASE_URL}/system/hospitals/add/")
+    time.sleep(1)
+
+    driver.find_element(By.NAME, "name").send_keys("Selenium Test Hospital")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "address").send_keys("Test Address, Dhaka")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "latitude").send_keys("23.80")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "longitude").send_keys("90.40")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "phone_number").send_keys("01700000099")
+    time.sleep(0.3)
+    js_click(driver, driver.find_element(By.CSS_SELECTOR, "button[type='submit']"))
+    time.sleep(2)
+
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Selenium Test Hospital" in page or "added" in page or "Manage" in page
+    driver.quit()
+
+
+# TEST 25: Paramedic cannot access manage hospitals
+def test_paramedic_cannot_access_manage_hospitals():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/system/hospitals/")
+    time.sleep(1)
+    assert "/dashboard/" in driver.current_url
+    driver.quit()
+
+
+# --- System Admin — Manage Users ---
+
+# TEST 26: Manage users loads for admin
+def test_manage_users_loads():
+    driver = get_driver()
+    do_login(driver, "sys_admin")
+    driver.get(f"{BASE_URL}/system/users/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "User" in page or "Manage" in page
+    driver.quit()
+
+
+# TEST 27: Paramedic cannot access manage users
+def test_paramedic_cannot_access_manage_users():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/system/users/")
+    time.sleep(1)
+    assert "/dashboard/" in driver.current_url
+    driver.quit()
+
+
+# --- User Profile ---
+
+# TEST 28: Profile page loads for any logged in user
+def test_profile_page_loads():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/profile/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Profile" in page or "para_user" in page
+    driver.quit()
+
+
+# TEST 29: Profile without login redirects
+def test_profile_without_login_redirects():
+    driver = get_driver()
+    driver.get(f"{BASE_URL}/profile/")
+    time.sleep(2)
+    assert "/accounts/login/" in driver.current_url
+    driver.quit()
+
+
+# --- Incoming Transfers & Notifications (Stage 3 URLs now available) ---
+
+# TEST 30: Incoming transfers loads for hospital admin
+def test_incoming_transfers_page_loads():
+    driver = get_driver()
+    do_login(driver, "hosp_admin")
+    driver.get(f"{BASE_URL}/transfers/incoming/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Transfer" in page or "Incoming" in page
+    driver.quit()
+
+
+# TEST 31: Notifications page loads for hospital admin
+def test_notifications_page_loads():
+    driver = get_driver()
+    do_login(driver, "hosp_admin")
+    driver.get(f"{BASE_URL}/notifications/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text
+    assert "Notification" in page
     driver.quit()
