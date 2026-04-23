@@ -1,171 +1,796 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPLBTS — Emergency Patient Load Balancing</title>
-    <!-- Bootstrap 5 CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
+    <title>{% block title %}EPLBTS — Emergency Patient Load Balancing{% endblock %}</title>
 
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-bg: #111827;
+            --sidebar-hover: rgba(255, 255, 255, 0.08);
+            --sidebar-active: rgba(59, 130, 246, 0.15);
+            --sidebar-active-border: #3b82f6;
+            --sidebar-text: #9ca3af;
+            --sidebar-text-hover: #ffffff;
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --bg-main: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --section-label: #6b7280;
+            --sos-bg: rgba(239, 68, 68, 0.1);
+            --sos-text: #ef4444;
+        }
+
+        /* ══ DARK MODE ══ */
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --section-label: #64748b;
+            --accent-blue: #60a5fa;
+        }
+
+        [data-theme="dark"] .top-navbar {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        [data-theme="dark"] .navbar-search .form-control {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            background: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .table {
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .table-dark {
+            background: #334155;
+        }
+
+        [data-theme="dark"] .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            background-color: #f8f9fa;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            z-index: 1040;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
         }
 
-        .container-fluid {
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-brand-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand-text h6 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-brand-text span {
+            color: var(--sidebar-text);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .sidebar-close {
+            position: absolute;
+            top: 20px;
+            right: 16px;
+            color: var(--sidebar-text);
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            background: none;
+            border: none;
+        }
+
+        .sidebar-nav {
             flex: 1;
+            padding: 12px 0;
+            overflow-y: auto;
         }
 
-        .navbar-brand {
-            font-weight: bold;
-            color: #dc3545 !important;
+        .sidebar-section {
+            padding: 16px 20px 6px;
         }
 
-        .sidebar {
-            min-height: 100vh;
-            background-color: #343a40;
+        .sidebar-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: var(--section-label);
         }
 
-        .sidebar a {
-            color: #adb5bd;
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            color: var(--sidebar-text);
             text-decoration: none;
-            display: block;
-            padding: 10px 15px;
+            font-size: 13.5px;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
         }
 
-        .sidebar a:hover {
-            background-color: #495057;
-            color: white;
+        .sidebar-link:hover {
+            background: var(--sidebar-hover);
+            color: var(--sidebar-text-hover);
         }
 
-        .sidebar a.active {
-            background-color: #495057;
-            color: white;
-            font-weight: bold;
-            border-left: 3px solid #dc3545;
+        .sidebar-link.active {
+            background: var(--sidebar-active);
+            color: var(--sidebar-active-border);
+            border-left-color: var(--sidebar-active-border);
+            font-weight: 600;
         }
 
-        .role-badge {
-            font-size: 0.75rem;
+        .sidebar-link i {
+            font-size: 17px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
         }
+
+        .sidebar-link .badge {
+            margin-left: auto;
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 10px;
+        }
+
+        /* SOS Button at bottom */
+        .sidebar-sos {
+            margin: 8px 14px 0;
+            padding: 12px 16px;
+            background: var(--sos-bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--sos-text);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-sos:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--sos-text);
+        }
+
+        .sidebar-sos i {
+            font-size: 17px;
+        }
+
+        /* User section at bottom */
+        .sidebar-user {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-user-info .name {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-user-info .role {
+            color: var(--sidebar-text);
+            font-size: 11px;
+        }
+
+        .sidebar-user-logout {
+            color: var(--sidebar-text);
+            font-size: 17px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .sidebar-user-logout:hover {
+            color: var(--accent-red);
+        }
+
+        /* ==================== MAIN CONTENT ==================== */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-wrapper.no-sidebar {
+            margin-left: 0;
+        }
+
+        /* ==================== TOP NAVBAR ==================== */
+        .top-navbar {
+            height: var(--navbar-height);
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .breadcrumb-nav {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-nav a:hover {
+            color: var(--accent-blue);
+        }
+
+        .breadcrumb-nav .separator {
+            margin: 0 6px;
+            color: #cbd5e1;
+        }
+
+        .breadcrumb-nav .current {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .navbar-search {
+            flex: 1;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .navbar-search .form-control {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px 8px 38px;
+            font-size: 13px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .navbar-search .form-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .navbar-search-wrapper {
+            position: relative;
+        }
+
+        .navbar-search-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .btn-new-triage {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .btn-new-triage:hover {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .navbar-icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 17px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .navbar-icon-btn:hover {
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .navbar-icon-btn .notif-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            border: 2px solid var(--card-bg);
+        }
+
+        .navbar-user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ==================== PAGE CONTENT ==================== */
+        .page-content {
+            flex: 1;
+            padding: 28px;
+        }
+
+        /* ==================== ALERTS ==================== */
+        .alert {
+            border-radius: 10px;
+            font-size: 13.5px;
+            border: none;
+            font-weight: 500;
+        }
+
+        /* ==================== MOBILE TOGGLE ==================== */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1035;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .sidebar-close {
+                display: block;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .main-wrapper {
+                margin-left: 0 !important;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+        }
+
+        /* ==================== UTILITY ==================== */
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        /* ══ Leaflet + Bootstrap Global Fix ══ */
+        .leaflet-pane,
+        .leaflet-tile,
+        .leaflet-marker-icon,
+        .leaflet-marker-shadow,
+        .leaflet-tile-container {
+            position: absolute !important;
+            left: 0;
+            top: 0;
+        }
+
+        .leaflet-container img {
+            max-width: none !important;
+            max-height: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
+        .leaflet-tile {
+            width: 256px !important;
+            height: 256px !important;
+        }
+
     </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand">🚑 EPLBTS</span>
-    {% if user.is_authenticated %}
-    <div class="d-flex align-items-center gap-3">
-        <span class="text-white">
-    <a href="{% url 'user_profile' %}" class="text-white text-decoration-none">
-        👤 {{ user.username }}
-    </a>
-    <span class="badge bg-danger role-badge ms-1">{{ user.get_role_display }}</span>
-</span>
-        <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm me-1">Profile</a>
-        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
-    </div>
-    {% endif %}
-</nav>
+{% if user.is_authenticated %}
+<!-- ============ SIDEBAR OVERLAY (mobile) ============ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-<div class="container-fluid">
-    <div class="row">
-
-        <!-- Sidebar (only for logged in users) -->
-        {% if user.is_authenticated %}
-        <div class="col-md-2 sidebar py-3">
-            <p class="text-secondary px-3 small">MENU</p>
-
-            <a href="{% url 'dashboard' %}"
-               class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">🏠 Dashboard</a>
-
-            {% if user.is_patient %}
-            <a href="{% url 'sos_emergency' %}"
-               class="{% if request.resolver_match.url_name == 'sos_emergency' %}active{% endif %}">🆘 SOS Emergency</a>
-            <a href="{% url 'hospital_list' %}"
-               class="{% if request.resolver_match.url_name == 'hospital_list' %}active{% endif %}">🏥 Find Hospital</a>
-            {% endif %}
-
-            {% if user.is_paramedic %}
-            <a href="{% url 'submit_triage' %}"
-               class="{% if request.resolver_match.url_name == 'submit_triage' %}active{% endif %}">📝 Submit Triage</a>
-            <a href="{% url 'pending_cases' %}"
-               class="{% if request.resolver_match.url_name == 'pending_cases' %}active{% endif %}">📋 Pending Cases</a>
-            <a href="{% url 'hospital_list' %}"
-               class="{% if request.resolver_match.url_name == 'hospital_list' %}active{% endif %}">🏥 View Hospitals</a>
-            {% endif %}
-
-            {% if user.is_hospital_admin %}
-            <a href="{% url 'update_hospital_status' %}"
-               class="{% if request.resolver_match.url_name == 'update_hospital_status' %}active{% endif %}">🏥 Update
-                Hospital Status</a>
-            <a href="{% url 'incoming_transfers' %}"
-               class="{% if request.resolver_match.url_name == 'incoming_transfers' %}active{% endif %}">📋 Transfer
-                Requests</a>
-            <a href="{% url 'hospital_notifications' %}"
-               class="{% if request.resolver_match.url_name == 'hospital_notifications' %}active{% endif %}">🔔
-                Notifications</a>
-            {% endif %}
-
-            {% if user.is_authority %}
-            <a href="{% url 'authority_dashboard' %}"
-               class="{% if request.resolver_match.url_name == 'authority_dashboard' %}active{% endif %}">📊 Monitor
-                Dashboard</a>
-            <a href="{% url 'hospital_list' %}"
-               class="{% if request.resolver_match.url_name == 'hospital_list' %}active{% endif %}">🏥 View Hospitals</a>
-            <a href="{% url 'audit_log' %}"
-               class="{% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">📝 Audit Logs</a>
-            {% endif %}
-
-            {% if user.is_system_admin %}
-            <a href="{% url 'manage_hospitals' %}"
-               class="{% if request.resolver_match.url_name == 'manage_hospitals' %}active{% endif %}">🏥 Manage
-                Hospitals</a>
-            <a href="{% url 'manage_users' %}"
-               class="{% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}">👥 Manage Users</a>
-            <a href="{% url 'audit_log' %}"
-               class="{% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">📝 Audit Logs</a>
-            {% endif %}
+<!-- ============ SIDEBAR ============ -->
+<nav class="sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+            <i class="bi bi-heart-pulse-fill"></i>
         </div>
+        <div class="sidebar-brand-text">
+            <h6>EPLBTS</h6>
+            <span>Emergency Triage System</span>
+        </div>
+        <button class="sidebar-close" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="sidebar-nav">
+
+        <!-- ── EMERGENCY ── -->
+        <div class="sidebar-section">
+            <span class="sidebar-section-label">Emergency</span>
+        </div>
+        <a href="{% url 'dashboard' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2-fill"></i> Triage Dashboard
+        </a>
+
+        {% if user.is_paramedic %}
+        <a href="{% url 'submit_triage' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'submit_triage' %}active{% endif %}">
+            <i class="bi bi-pencil-square"></i> Submit Triage
+        </a>
+        <a href="{% url 'pending_cases' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'pending_cases' %}active{% endif %}">
+            <i class="bi bi-arrow-left-right"></i> Pending Cases
+        </a>
         {% endif %}
 
-
-        <!-- Main Content -->
-        <div class="{% if user.is_authenticated %}col-md-10{% else %}col-md-12{% endif %} py-4 px-4">
-
-            <!-- Messages / Alerts -->
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-
-            <!-- Page Content -->
-            {% block content %}
-            {% endblock %}
-
+        <!-- ── HOSPITALS ── -->
+        <div class="sidebar-section">
+            <span class="sidebar-section-label">Hospitals</span>
         </div>
+
+        {% if user.is_hospital_admin %}
+        <a href="{% url 'incoming_transfers' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'incoming_transfers' %}active{% endif %}">
+            <i class="bi bi-hospital"></i> Hospital Dashboard
+        </a>
+        <a href="{% url 'update_hospital_status' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'update_hospital_status' %}active{% endif %}">
+            <i class="bi bi-clipboard-data"></i> Capacity Update
+        </a>
+        {% endif %}
+
+        {% if user.is_paramedic or user.is_authority or user.is_patient or user.is_system_admin %}
+        <a href="{% url 'hospital_list' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'hospital_list' %}active{% endif %}">
+            <i class="bi bi-hospital"></i> View Hospitals
+        </a>
+        {% endif %}
+
+        <!-- ── MONITORING ── -->
+        {% if user.is_authority or user.is_system_admin %}
+        <div class="sidebar-section">
+            <span class="sidebar-section-label">Monitoring</span>
+        </div>
+        <a href="{% url 'authority_dashboard' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'authority_dashboard' %}active{% endif %}">
+            <i class="bi bi-globe-americas"></i> City Overview
+        </a>
+        <a href="{% url 'hospital_list' %}" class="sidebar-link">
+            <i class="bi bi-graph-up"></i> Trends & Analytics
+        </a>
+        {% endif %}
+
+        <!-- ── ADMINISTRATION ── -->
+        {% if user.is_system_admin %}
+        <div class="sidebar-section">
+            <span class="sidebar-section-label">Administration</span>
+        </div>
+        <a href="{% url 'manage_users' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}">
+            <i class="bi bi-people"></i> User Management
+        </a>
+        <a href="{% url 'audit_log' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">
+            <i class="bi bi-journal-text"></i> Audit Logs
+        </a>
+        <a href="{% url 'manage_hospitals' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'manage_hospitals' %}active{% endif %}">
+            <i class="bi bi-hospital"></i> Manage Hospitals
+        </a>
+        {% endif %}
+
+        {% if user.is_authority %}
+        <div class="sidebar-section">
+            <span class="sidebar-section-label">Administration</span>
+        </div>
+        <a href="{% url 'audit_log' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}">
+            <i class="bi bi-journal-text"></i> Audit Logs
+        </a>
+        {% endif %}
+
+        <!-- ── NOTIFICATIONS (Hospital Admin) ── -->
+        {% if user.is_hospital_admin %}
+        <a href="{% url 'hospital_notifications' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'hospital_notifications' %}active{% endif %}">
+            <i class="bi bi-bell"></i> Notifications
+        </a>
+        {% endif %}
     </div>
+
+    <!-- SOS Button -->
+    <div style="padding: 0 0 8px;">
+        <a href="{% url 'sos_emergency' %}" class="sidebar-sos">
+            <i class="bi bi-lightning-charge-fill"></i> Patient SOS
+        </a>
+    </div>
+
+    <!-- User Info -->
+    <div class="sidebar-user">
+        <div class="sidebar-user-avatar">
+            {{ user.username|make_list|first|upper }}
+        </div>
+        <div class="sidebar-user-info">
+            <div class="name">{{ user.get_full_name|default:user.username }}</div>
+            <div class="role">{{ user.get_role_display }}</div>
+        </div>
+        <a href="{% url 'logout' %}" class="sidebar-user-logout" title="Logout">
+            <i class="bi bi-box-arrow-right"></i>
+        </a>
+    </div>
+</nav>
+{% endif %}
+
+<!-- ============ MAIN WRAPPER ============ -->
+<div class="main-wrapper {% if not user.is_authenticated %}no-sidebar{% endif %}">
+
+    {% if user.is_authenticated %}
+    <!-- ============ TOP NAVBAR ============ -->
+    <header class="top-navbar">
+        <button class="mobile-toggle" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav">
+            <a href="{% url 'dashboard' %}">Home</a>
+            <span class="separator">&rsaquo;</span>
+            <span class="current">{% block breadcrumb %}Dashboard{% endblock %}</span>
+        </div>
+
+
+       <!-- Spacer to push icons right -->
+        <div style="flex:1;"></div>
+
+        <!-- Actions -->
+        {% if user.is_paramedic %}
+        <a href="{% url 'submit_triage' %}" class="btn btn-new-triage">
+            <i class="bi bi-plus-lg"></i> New Triage
+        </a>
+        {% endif %}
+
+        <a href="{% url 'user_profile' %}" class="navbar-icon-btn" title="Profile">
+            <i class="bi bi-person"></i>
+        </a>
+
+        <button class="navbar-icon-btn" title="Toggle Dark Mode" onclick="toggleDarkMode()">
+            <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+        </button>
+
+        {% if user.is_paramedic or user.is_hospital_admin or user.is_authority or user.is_system_admin %}
+        <a href="{% url 'dashboard' %}" class="navbar-icon-btn" title="Notifications">
+            <i class="bi bi-bell"></i>
+            <span class="notif-dot"></span>
+        </a>
+        {% endif %}
+
+        <div class="navbar-user-avatar" title="{{ user.username }}">
+            {{ user.username|make_list|first|upper }}
+        </div>
+    </header>
+    {% endif %}
+
+    <!-- ============ PAGE CONTENT ============ -->
+    <main class="page-content">
+        <!-- Alerts -->
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+            {% if message.tags == 'success' %}
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {% elif message.tags == 'danger' %}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {% elif message.tags == 'info' %}
+            <i class="bi bi-info-circle-fill me-2"></i>
+            {% elif message.tags == 'warning' %}
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            {% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        {% block content %}{% endblock %}
+    </main>
+
 </div>
 
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Footer -->
-<footer class="bg-dark text-white text-center py-3 mt-auto">
-    <div class="container">
-        <small>
-            🚑 <strong>EPLBTS</strong> — Emergency Patient Load Balancing & Triage Support System
-            <br>
-            © 2026 CSE 314 — Software Engineering Lab | UAP
-            <br>
-            <span class="text-muted">Developed by: Syed Mahatasin Hussain| Sazid Abdullah | Boishakhi Basu | Jisan Ahmed Emon</span>
-        </small>
-    </div>
-</footer>
+
+<!-- Sidebar Toggle Script -->
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('show');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+</script>
+
+{% block extra_js %}{% endblock %}
+<script>
+    // Dark Mode Toggle
+    function toggleDarkMode() {
+        var body = document.documentElement;
+        var icon = document.getElementById('darkModeIcon');
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.removeAttribute('data-theme');
+            icon.className = 'bi bi-moon-fill';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'bi bi-sun-fill';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    // Load saved theme
+    (function () {
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            var icon = document.getElementById('darkModeIcon');
+            if (icon) icon.className = 'bi bi-sun-fill';
+        }
+    })();
+</script>
 </body>
 </html>
