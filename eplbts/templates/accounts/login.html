@@ -2,52 +2,760 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPLBTS — Sign In</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: #0a0f1e;
+            overflow: hidden;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ═══════════ LEFT PANEL ═══════════ */
+        .auth-left {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 30% 50%, #0f1d3a 0%, #0a0f1e 70%);
+        }
+
+        /* Animated grid background */
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            opacity: 0.04;
+            background-image: linear-gradient(rgba(59, 130, 246, 0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.5) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(60px, 60px);
+            }
+        }
+
+        /* Glowing orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0;
+            animation: orbPulse 6s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: #3b82f6;
+            top: 10%;
+            left: -5%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 200px;
+            height: 200px;
+            background: #8b5cf6;
+            bottom: 15%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #06b6d4;
+            top: 50%;
+            left: 30%;
+            animation-delay: 4s;
+        }
+
+        @keyframes orbPulse {
+            0%, 100% {
+                opacity: 0.08;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.18;
+                transform: scale(1.15);
+            }
+        }
+
+        /* Floating medical icons */
+        .float-icon {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: floatUp 8s ease-in-out infinite;
+        }
+
+        .float-icon.f1 {
+            top: 8%;
+            left: 8%;
+            background: rgba(59, 130, 246, 0.12);
+            color: rgba(59, 130, 246, 0.6);
+            animation-delay: 0s;
+            animation-duration: 7s;
+        }
+
+        .float-icon.f2 {
+            top: 15%;
+            right: 15%;
+            background: rgba(16, 185, 129, 0.12);
+            color: rgba(16, 185, 129, 0.6);
+            animation-delay: 1.2s;
+            animation-duration: 9s;
+        }
+
+        .float-icon.f3 {
+            bottom: 20%;
+            left: 12%;
+            background: rgba(239, 68, 68, 0.12);
+            color: rgba(239, 68, 68, 0.5);
+            animation-delay: 2.5s;
+            animation-duration: 8s;
+        }
+
+        .float-icon.f4 {
+            bottom: 30%;
+            right: 8%;
+            background: rgba(245, 158, 11, 0.12);
+            color: rgba(245, 158, 11, 0.5);
+            animation-delay: 3.8s;
+            animation-duration: 10s;
+        }
+
+        .float-icon.f5 {
+            top: 45%;
+            left: 5%;
+            background: rgba(139, 92, 246, 0.12);
+            color: rgba(139, 92, 246, 0.5);
+            animation-delay: 0.8s;
+            animation-duration: 11s;
+        }
+
+        .float-icon.f6 {
+            top: 60%;
+            right: 20%;
+            background: rgba(6, 182, 212, 0.12);
+            color: rgba(6, 182, 212, 0.5);
+            animation-delay: 4.5s;
+            animation-duration: 7.5s;
+        }
+
+        @keyframes floatUp {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-18px) rotate(3deg);
+            }
+            75% {
+                transform: translateY(12px) rotate(-2deg);
+            }
+        }
+
+        /* Heartbeat line */
+        .heartbeat-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            overflow: hidden;
+            opacity: 0.08;
+        }
+
+        .heartbeat-svg {
+            width: 200%;
+            animation: heartScroll 4s linear infinite;
+        }
+
+        @keyframes heartScroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* Particle dots */
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.3);
+            animation: particleFloat 12s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Brand */
+        .brand-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 34px;
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+            animation: logoEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both, logoPulse 3s ease-in-out 1.5s infinite;
+        }
+
+        @keyframes logoEntrance {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% {
+                box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 48px rgba(59, 130, 246, 0.6), 0 0 0 12px rgba(59, 130, 246, 0.08);
+            }
+        }
+
+        .brand-name {
+            color: #fff;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            animation: fadeSlideUp 0.6s ease 0.4s both;
+        }
+
+        .brand-tagline {
+            color: #3b82f6;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 700;
+            margin-top: 6px;
+            animation: fadeSlideUp 0.6s ease 0.6s both;
+        }
+
+        .brand-motto {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.7;
+            margin-top: 20px;
+            animation: fadeSlideUp 0.6s ease 0.8s both;
+        }
+
+        .brand-motto span {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        @keyframes fadeSlideUp {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Stats */
+        .stats-row {
+            display: flex;
+            gap: 32px;
+            margin-top: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-item {
+            text-align: center;
+            animation: fadeSlideUp 0.6s ease both;
+            padding: 14px 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            min-width: 90px;
+        }
+
+        .stat-item:nth-child(1) {
+            animation-delay: 1s;
+        }
+
+        .stat-item:nth-child(2) {
+            animation-delay: 1.15s;
+        }
+
+        .stat-item:nth-child(3) {
+            animation-delay: 1.3s;
+        }
+
+        .stat-val {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #475569;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ═══════════ RIGHT PANEL ═══════════ */
+        .auth-right {
+            width: 500px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 48px 52px;
+            position: relative;
+            z-index: 10;
+            animation: panelSlideIn 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
+        @keyframes panelSlideIn {
+            0% {
+                transform: translateX(60px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .auth-right h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+            animation: fadeSlideUp 0.5s ease 0.3s both;
+        }
+
+        .auth-right .subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 36px;
+            animation: fadeSlideUp 0.5s ease 0.45s both;
+        }
+
+        .form-label-custom {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input-group {
+            position: relative;
+            margin-bottom: 22px;
+        }
+
+        .form-input-group i.input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .form-input-group .form-control {
+            padding: 13px 16px 13px 46px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .form-input-group .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+        }
+
+        .form-input-group .form-control:focus + i.input-icon,
+        .form-input-group:focus-within i.input-icon {
+            color: #3b82f6;
+        }
+
+        .form-input-group .form-control::placeholder {
+            color: #b0b9c6;
+        }
+
+        .btn-signin {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(59, 130, 246, 0.45);
+        }
+
+        .btn-signin:active {
+            transform: translateY(0);
+        }
+
+        .btn-signin .shine {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            animation: btnShine 3s ease-in-out infinite;
+        }
+
+        @keyframes btnShine {
+            0% {
+                left: -100%;
+            }
+            30%, 100% {
+                left: 100%;
+            }
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 28px 0;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+        }
+
+        .btn-sos {
+            display: block;
+            text-align: center;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            background: rgba(239, 68, 68, 0.06);
+            color: #ef4444;
+            border: 1.5px solid rgba(239, 68, 68, 0.12);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-sos:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.25);
+            color: #ef4444;
+            transform: translateY(-1px);
+        }
+
+        .btn-sos .sos-pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            margin-right: 8px;
+            vertical-align: middle;
+            animation: sosPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sosPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.4);
+            }
+        }
+
+        .auth-footer {
+            margin-top: 28px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .auth-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: #b0b9c6;
+        }
+
+        .alert {
+            border-radius: 12px;
+            font-size: 13px;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        /* ═══════════ RESPONSIVE ═══════════ */
+        @media (max-width: 991.98px) {
+            .auth-left {
+                display: none;
+            }
+
+            .auth-right {
+                width: 100%;
+                padding: 36px 24px;
+            }
+        }
+    </style>
 </head>
 <body>
-{% extends 'base.html' %}
+<div class="auth-wrapper">
+    <!-- ═══ LEFT PANEL ═══ -->
+    <div class="auth-left">
+        <div class="grid-bg"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
 
-{% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
+        <div class="particles" id="particles"></div>
 
-        <div class="card shadow">
-            <div class="card-header bg-danger text-white text-center">
-                <h4>🚑 EPLBTS Login</h4>
-                <small>Emergency Patient Load Balancing System</small>
-            </div>
-            <div class="card-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
+        <div class="float-icon f1"><i class="bi bi-activity"></i></div>
+        <div class="float-icon f2"><i class="bi bi-hospital"></i></div>
+        <div class="float-icon f3"><i class="bi bi-heart-pulse"></i></div>
+        <div class="float-icon f4"><i class="bi bi-truck"></i></div>
+        <div class="float-icon f5"><i class="bi bi-clipboard2-pulse"></i></div>
+        <div class="float-icon f6"><i class="bi bi-capsule"></i></div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        {{ form.username }}
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        {{ form.password }}
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger">Login</button>
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer text-center">
-                <small>Don't have an account?
-                    <a href="{% url 'register' %}">Register here</a>
-                </small>
-                <hr>
-                <a href="{% url 'sos_emergency' %}" class="btn btn-danger btn-sm">
-                    🆘 Emergency? SOS without Login
-                </a>
+        <div class="brand-content">
+            <div class="brand-logo"><i class="bi bi-heart-pulse-fill"></i></div>
+            <div class="brand-name">EPLBTS</div>
+            <div class="brand-tagline">Emergency Patient Load Balancing & Triage</div>
+            <div class="brand-motto">
+                <span>"Every Second Counts.<br>Every Bed Matters."</span>
             </div>
         </div>
 
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-val" id="statHosp">0</div>
+                <div class="stat-label">Hospitals</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-val">99.9%</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-val">&lt;5min</div>
+                <div class="stat-label">Avg Response</div>
+            </div>
+        </div>
+
+        <!-- Heartbeat line -->
+        <div class="heartbeat-line">
+            <svg class="heartbeat-svg" viewBox="0 0 1600 100" preserveAspectRatio="none">
+                <path d="M0,50 L100,50 L150,50 L180,20 L210,80 L240,30 L260,60 L280,50 L400,50 L500,50 L550,50 L580,15 L610,85 L640,25 L660,65 L680,50 L800,50 L900,50 L950,50 L980,20 L1010,80 L1040,30 L1060,60 L1080,50 L1200,50 L1300,50 L1350,50 L1380,15 L1410,85 L1440,25 L1460,65 L1480,50 L1600,50"
+                      fill="none" stroke="rgba(59,130,246,0.8)" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ═══ RIGHT PANEL ═══ -->
+    <div class="auth-right">
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Sign in to continue to EPLBTS</p>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-label-custom">User Name</div>
+            <div class="form-input-group">
+                {{ form.username }}
+                <i class="bi bi-person input-icon"></i>
+            </div>
+
+            <div class="form-label-custom">Password</div>
+            <div class="form-input-group">
+                {{ form.password }}
+                <i class="bi bi-lock input-icon"></i>
+            </div>
+
+            <button type="submit" class="btn-signin">
+                <span class="shine"></span>
+                Sign In <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{% url 'register' %}">Register here</a>
+        </div>
+
+        <div class="divider"><span>or emergency access</span></div>
+
+        <a href="{% url 'sos_emergency' %}" class="btn-sos">
+            <span class="sos-pulse"></span>
+            <i class="bi bi-lightning-charge-fill"></i> SOS — No Login Required
+        </a>
+
+        <div class="copyright">&copy; 2026 EPLBTS — University of Asia Pacific | Team: Cloud9</div>
     </div>
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Style Django form fields
+    document.querySelectorAll('.form-input-group input').forEach(function (input) {
+        input.classList.add('form-control');
+        if (input.name === 'username') input.placeholder = 'Enter Your User Name';
+        if (input.name === 'password') {
+            input.placeholder = 'Enter your password';
+            input.type = 'password';
+        }
+    });
+
+    // Generate floating particles
+    (function () {
+        var container = document.getElementById('particles');
+        for (var i = 0; i < 30; i++) {
+            var p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 12 + 's';
+            p.style.animationDuration = (8 + Math.random() * 8) + 's';
+            p.style.width = (2 + Math.random() * 3) + 'px';
+            p.style.height = p.style.width;
+            p.style.background = ['rgba(59,130,246,0.3)', 'rgba(139,92,246,0.3)', 'rgba(6,182,212,0.3)', 'rgba(16,185,129,0.2)'][Math.floor(Math.random() * 4)];
+            container.appendChild(p);
+        }
+    })();
+
+    // Animate hospital counter
+    (function () {
+        var target = 20;
+        var el = document.getElementById('statHosp');
+        var current = 0;
+        var step = function () {
+            current++;
+            el.textContent = current + '+';
+            if (current < target) setTimeout(step, 60);
+        };
+        setTimeout(step, 1200);
+    })();
+</script>
 </body>
 </html>

@@ -1,16 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>404 — Page Not Found | EPLBTS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPLBTS — Page Not Found</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f1f5f9; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .error-box { text-align: center; max-width: 440px; padding: 40px 20px; }
+        .error-code { font-size: 100px; font-weight: 800; color: #3b82f6; line-height: 1; margin-bottom: 8px; }
+        .error-title { font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+        .error-desc { color: #64748b; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+        .btn-home {
+            background: #3b82f6; color: #fff; border: none; border-radius: 10px;
+            padding: 12px 28px; font-size: 14px; font-weight: 700; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s;
+        }
+        .btn-home:hover { background: #2563eb; }
+        .brand { margin-top: 32px; font-size: 12px; color: #94a3b8; }
+        .brand strong { color: #3b82f6; }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container text-center mt-5">
-        <h1 class="display-1 text-danger">404</h1>
-        <h3>Page Not Found</h3>
-        <p class="text-muted">The page you're looking for doesn't exist.</p>
-        <a href="/" class="btn btn-danger">🏠 Go Home</a>
-        <a href="/sos/" class="btn btn-outline-danger">🆘 SOS Emergency</a>
+<body>
+    <div class="error-box">
+        <div class="error-code">404</div>
+        <div class="error-title">Page Not Found</div>
+        <p class="error-desc">The page you're looking for doesn't exist or has been moved. Check the URL or go back to the dashboard.</p>
+        <a href="/" class="btn-home"><i class="bi bi-house"></i> Back to Dashboard</a>
+        <div class="brand"><strong>EPLBTS</strong> — Emergency Patient Load Balancing & Triage System</div>
     </div>
 </body>
 </html>

@@ -2,47 +2,723 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPLBTS — Create Account</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: #0a0f1e;
+            overflow-x: hidden;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ═══════════ LEFT PANEL ═══════════ */
+        .auth-left {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 30% 50%, #0f1d3a 0%, #0a0f1e 70%);
+        }
+
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            opacity: 0.04;
+            background-image: linear-gradient(rgba(59, 130, 246, 0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.5) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(60px, 60px);
+            }
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0;
+            animation: orbPulse 6s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 280px;
+            height: 280px;
+            background: #10b981;
+            top: 8%;
+            left: -5%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 220px;
+            height: 220px;
+            background: #3b82f6;
+            bottom: 15%;
+            right: 5%;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: #8b5cf6;
+            top: 55%;
+            left: 25%;
+            animation-delay: 4s;
+        }
+
+        @keyframes orbPulse {
+            0%, 100% {
+                opacity: 0.08;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.18;
+                transform: scale(1.15);
+            }
+        }
+
+        .float-icon {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: floatUp 8s ease-in-out infinite;
+        }
+
+        .float-icon.f1 {
+            top: 10%;
+            left: 10%;
+            background: rgba(16, 185, 129, 0.12);
+            color: rgba(16, 185, 129, 0.6);
+            animation-delay: 0s;
+            animation-duration: 7s;
+        }
+
+        .float-icon.f2 {
+            top: 18%;
+            right: 12%;
+            background: rgba(59, 130, 246, 0.12);
+            color: rgba(59, 130, 246, 0.6);
+            animation-delay: 1.5s;
+            animation-duration: 9s;
+        }
+
+        .float-icon.f3 {
+            bottom: 22%;
+            left: 15%;
+            background: rgba(245, 158, 11, 0.12);
+            color: rgba(245, 158, 11, 0.5);
+            animation-delay: 2.5s;
+            animation-duration: 8s;
+        }
+
+        .float-icon.f4 {
+            bottom: 35%;
+            right: 10%;
+            background: rgba(239, 68, 68, 0.12);
+            color: rgba(239, 68, 68, 0.5);
+            animation-delay: 3.5s;
+            animation-duration: 10s;
+        }
+
+        .float-icon.f5 {
+            top: 50%;
+            left: 6%;
+            background: rgba(6, 182, 212, 0.12);
+            color: rgba(6, 182, 212, 0.5);
+            animation-delay: 1s;
+            animation-duration: 11s;
+        }
+
+        @keyframes floatUp {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-18px) rotate(3deg);
+            }
+            75% {
+                transform: translateY(12px) rotate(-2deg);
+            }
+        }
+
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.3);
+            animation: particleFloat 12s linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .heartbeat-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            overflow: hidden;
+            opacity: 0.08;
+        }
+
+        .heartbeat-svg {
+            width: 200%;
+            animation: heartScroll 4s linear infinite;
+        }
+
+        @keyframes heartScroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 34px;
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+            animation: logoEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both, logoPulse 3s ease-in-out 1.5s infinite;
+        }
+
+        @keyframes logoEntrance {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% {
+                box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 48px rgba(16, 185, 129, 0.6), 0 0 0 12px rgba(16, 185, 129, 0.08);
+            }
+        }
+
+        .brand-name {
+            color: #fff;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            animation: fadeSlideUp 0.6s ease 0.4s both;
+        }
+
+        .brand-tagline {
+            color: #10b981;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 700;
+            margin-top: 6px;
+            animation: fadeSlideUp 0.6s ease 0.6s both;
+        }
+
+        .brand-motto {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.7;
+            margin-top: 20px;
+            animation: fadeSlideUp 0.6s ease 0.8s both;
+        }
+
+        .brand-motto span {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        @keyframes fadeSlideUp {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Features */
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 36px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            animation: fadeSlideUp 0.6s ease both;
+        }
+
+        .feature-item:nth-child(1) {
+            animation-delay: 1s;
+        }
+
+        .feature-item:nth-child(2) {
+            animation-delay: 1.15s;
+        }
+
+        .feature-item:nth-child(3) {
+            animation-delay: 1.3s;
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .feature-icon.green {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .feature-icon.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .feature-icon.amber {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        .feature-text {
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ═══════════ RIGHT PANEL ═══════════ */
+        .auth-right {
+            width: 500px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 36px 48px;
+            position: relative;
+            z-index: 10;
+            overflow-y: auto;
+            animation: panelSlideIn 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
+        @keyframes panelSlideIn {
+            0% {
+                transform: translateX(60px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .auth-right h2 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+            animation: fadeSlideUp 0.5s ease 0.3s both;
+        }
+
+        .auth-right .subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 28px;
+            animation: fadeSlideUp 0.5s ease 0.45s both;
+        }
+
+        .form-label-custom {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input-group {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .form-input-group i.input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 16px;
+            transition: color 0.2s;
+            z-index: 2;
+        }
+
+        .form-input-group .form-control {
+            padding: 12px 16px 12px 46px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .form-input-group .form-control:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.08);
+        }
+
+        .form-input-group:focus-within i.input-icon {
+            color: #10b981;
+        }
+
+        .form-input-group .form-control::placeholder {
+            color: #b0b9c6;
+        }
+
+        .field-error {
+            color: #ef4444;
+            font-size: 11.5px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            margin-top: 6px;
+        }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
+        }
+
+        .btn-register:active {
+            transform: translateY(0);
+        }
+
+        .btn-register .shine {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            animation: btnShine 3s ease-in-out infinite;
+        }
+
+        @keyframes btnShine {
+            0% {
+                left: -100%;
+            }
+            30%, 100% {
+                left: 100%;
+            }
+        }
+
+        .auth-footer {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .auth-footer a {
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 11px;
+            color: #b0b9c6;
+        }
+
+        .alert {
+            border-radius: 12px;
+            font-size: 13px;
+            border: none;
+            margin-bottom: 16px;
+        }
+
+        /* ═══════════ RESPONSIVE ═══════════ */
+        @media (max-width: 991.98px) {
+            .auth-left {
+                display: none;
+            }
+
+            .auth-right {
+                width: 100%;
+                padding: 28px 24px;
+            }
+        }
+    </style>
 </head>
 <body>
-{% extends 'base.html' %}
+<div class="auth-wrapper">
+    <!-- ═══ LEFT PANEL ═══ -->
+    <div class="auth-left">
+        <div class="grid-bg"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="particles" id="particles"></div>
 
-{% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5">
+        <div class="float-icon f1"><i class="bi bi-shield-check"></i></div>
+        <div class="float-icon f2"><i class="bi bi-hospital"></i></div>
+        <div class="float-icon f3"><i class="bi bi-people"></i></div>
+        <div class="float-icon f4"><i class="bi bi-heart-pulse"></i></div>
+        <div class="float-icon f5"><i class="bi bi-globe-americas"></i></div>
 
-        <div class="card shadow">
-            <div class="card-header bg-danger text-white text-center">
-                <h4>📋 Create Account</h4>
-            </div>
-            <div class="card-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
-
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.errors %}
-                        <div class="text-danger small">{{ field.errors }}</div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger">Register</button>
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer text-center">
-                <small>Already have an account?
-                    <a href="{% url 'login' %}">Login here</a>
-                </small>
+        <div class="brand-content">
+            <div class="brand-logo"><i class="bi bi-heart-pulse-fill"></i></div>
+            <div class="brand-name">EPLBTS</div>
+            <div class="brand-tagline">Emergency Patient Load Balancing & Triage</div>
+            <div class="brand-motto">
+                <span>Join the network of healthcare<br>professionals saving lives daily.</span>
             </div>
         </div>
 
+        <div class="features">
+            <div class="feature-item">
+                <div class="feature-icon green"><i class="bi bi-lightning-charge-fill"></i></div>
+                <span class="feature-text">Real-time hospital load balancing</span>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon blue"><i class="bi bi-geo-alt-fill"></i></div>
+                <span class="feature-text">GPS-based nearest hospital routing</span>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon amber"><i class="bi bi-shield-fill-check"></i></div>
+                <span class="feature-text">Secure role-based access control</span>
+            </div>
+        </div>
+
+        <div class="heartbeat-line">
+            <svg class="heartbeat-svg" viewBox="0 0 1600 100" preserveAspectRatio="none">
+                <path d="M0,50 L100,50 L150,50 L180,20 L210,80 L240,30 L260,60 L280,50 L400,50 L500,50 L550,50 L580,15 L610,85 L640,25 L660,65 L680,50 L800,50 L900,50 L950,50 L980,20 L1010,80 L1040,30 L1060,60 L1080,50 L1200,50 L1300,50 L1350,50 L1380,15 L1410,85 L1440,25 L1460,65 L1480,50 L1600,50"
+                      fill="none" stroke="rgba(16,185,129,0.8)" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ═══ RIGHT PANEL ═══ -->
+    <div class="auth-right">
+        <h2>Create Account</h2>
+        <p class="subtitle">Register to access EPLBTS</p>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-label-custom">Full Name</div>
+            <div class="form-input-group">
+                {{ form.username }}
+                <i class="bi bi-person input-icon"></i>
+                {% if form.username.errors %}
+                <div class="field-error">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-label-custom">Email Address</div>
+            <div class="form-input-group">
+                {{ form.email }}
+                <i class="bi bi-envelope input-icon"></i>
+                {% if form.email.errors %}
+                <div class="field-error">{{ form.email.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-label-custom">Phone Number</div>
+            <div class="form-input-group">
+                {{ form.phone_number }}
+                <i class="bi bi-telephone input-icon"></i>
+                {% if form.phone_number.errors %}
+                <div class="field-error">{{ form.phone_number.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-label-custom">Password</div>
+            <div class="form-input-group">
+                {{ form.password1 }}
+                <i class="bi bi-lock input-icon"></i>
+                {% if form.password1.errors %}
+                <div class="field-error">{{ form.password1.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-label-custom">Confirm Password</div>
+            <div class="form-input-group">
+                {{ form.password2 }}
+                <i class="bi bi-lock-fill input-icon"></i>
+                {% if form.password2.errors %}
+                <div class="field-error">{{ form.password2.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-register">
+                <span class="shine"></span>
+                Create Account <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="{% url 'login' %}">Sign In</a>
+        </div>
+
+        <div class="copyright">&copy; 2026 EPLBTS — University of Asia Pacific | Team: Cloud9</div>
     </div>
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Style Django form fields
+    document.querySelectorAll('.form-input-group input').forEach(function (input) {
+        input.classList.add('form-control');
+        var placeholders = {
+            'username': 'Please Enter Your Name',
+            'email': 'Please Enter Your Email',
+            'phone_number': '+880 1XXX-XXXXXX',
+            'password1': 'Min 8 characters',
+            'password2': 'Re-enter password'
+        };
+        if (placeholders[input.name]) input.placeholder = placeholders[input.name];
+        if (input.name === 'password1' || input.name === 'password2') input.type = 'password';
+    });
+
+    // Generate floating particles
+    (function () {
+        var container = document.getElementById('particles');
+        for (var i = 0; i < 25; i++) {
+            var p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 12 + 's';
+            p.style.animationDuration = (8 + Math.random() * 8) + 's';
+            p.style.width = (2 + Math.random() * 3) + 'px';
+            p.style.height = p.style.width;
+            p.style.background = ['rgba(16,185,129,0.3)', 'rgba(59,130,246,0.3)', 'rgba(139,92,246,0.3)', 'rgba(6,182,212,0.25)'][Math.floor(Math.random() * 4)];
+            container.appendChild(p);
+        }
+    })();
+</script>
 </body>
 </html>
