@@ -14,6 +14,7 @@ class TriageForm(forms.ModelForm):
             'needs_blood_bank', 'needs_cath_lab',
         ]
         widgets = {
+            'triage_level': forms.Select(attrs={'class': 'form-select'}),
             'case_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'patient_age': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -26,6 +27,12 @@ class TriageForm(forms.ModelForm):
             'needs_blood_bank': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'needs_cath_lab': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['triage_level'].required = False
+        self.fields['latitude'].required = False
+        self.fields['longitude'].required = False
 
 # 2. Hospital Status Update Form
 class HospitalStatusForm(forms.ModelForm):
