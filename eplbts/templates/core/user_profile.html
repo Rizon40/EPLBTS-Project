@@ -7,82 +7,275 @@
 <body>
 {% extends 'base.html' %}
 
-{% block content %}
-<h3>👤 My Profile</h3>
-<hr>
+{% block breadcrumb %}Profile{% endblock %}
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                Profile Information
+{% block content %}
+<style>
+    .page-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .profile-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, #111827, #1e293b);
+        padding: 30px 28px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .profile-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--accent-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 26px;
+        font-weight: 800;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+    }
+
+    .profile-header .name {
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .profile-header .role-badge {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 4px;
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+    }
+
+    .profile-body {
+        padding: 28px;
+    }
+
+    .form-label-sm {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control:disabled {
+        background: var(--bg-main);
+        color: var(--text-secondary);
+    }
+
+    .info-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 20px;
+    }
+
+    .info-section h6 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 13.5px;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: var(--text-secondary);
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .btn-save {
+        background: var(--accent-blue);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 11px 24px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: background 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-save:hover {
+        background: #2563eb;
+    }
+
+    .btn-change-pw {
+        background: transparent;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 11px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s;
+    }
+
+    .btn-change-pw:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+    }
+</style>
+
+<div class="page-title">My Profile</div>
+<p class="page-subtitle">Manage your account information.</p>
+
+<div class="row g-4">
+    <!-- Edit Form -->
+    <div class="col-md-7">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">{{ user.username|make_list|first|upper }}</div>
+                <div>
+                    <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                    <span class="role-badge">{{ user.get_role_display }}</span>
+                </div>
             </div>
-            <div class="card-body p-4">
+            <div class="profile-body">
                 <form method="POST">
                     {% csrf_token %}
 
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
+                        <div class="form-label-sm">Username</div>
                         <input type="text" class="form-control" value="{{ user.username }}" disabled>
-                        <small class="text-muted">Username cannot be changed</small>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">First Name</label>
-                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="form-label-sm">First Name</div>
+                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}"
+                                   placeholder="First Name">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                        <div class="col-6">
+                            <div class="form-label-sm">Last Name</div>
+                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}"
+                                   placeholder="Last Name">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
+                        <div class="form-label-sm">Email Address</div>
                         <input type="email" name="email" class="form-control" value="{{ user.email }}">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Phone Number</label>
-                        <input type="text" name="phone_number" class="form-control" value="{{ user.phone_number|default:'' }}">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <input type="text" class="form-control" value="{{ user.get_role_display }}" disabled>
+                        <div class="form-label-sm">Phone Number</div>
+                        <input type="text" name="phone_number" class="form-control"
+                               value="{{ user.phone_number|default:'' }}" placeholder="+880 1XXX-XXXXXX">
                     </div>
 
                     {% if user.hospital %}
                     <div class="mb-3">
-                        <label class="form-label">Assigned Hospital</label>
+                        <div class="form-label-sm">Assigned Hospital</div>
                         <input type="text" class="form-control" value="{{ user.hospital.name }}" disabled>
                     </div>
                     {% endif %}
 
-                    <hr>
-                    <button type="submit" class="btn btn-primary">💾 Update Profile</button>
-                    <a href="{% url 'change_password' %}" class="btn btn-outline-warning ms-2">🔑 Change Password</a>
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn-save">
+                            <i class="bi bi-check-circle"></i> Update Profile
+                        </button>
+                        <a href="{% url 'change_password' %}" class="btn-change-pw">
+                            <i class="bi bi-key"></i> Change Password
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                Account Details
+    <!-- Account Details -->
+    <div class="col-md-5">
+        <div class="info-section">
+            <h6>Account Details</h6>
+            <div class="info-row">
+                <span class="info-label">User ID</span>
+                <span class="info-value">#{{ user.id }}</span>
             </div>
-            <div class="card-body p-4">
-                <p><strong>Account Created:</strong> {{ user.date_joined|date:"d M Y, H:i" }}</p>
-                <p><strong>Last Login:</strong> {{ user.last_login|date:"d M Y, H:i" }}</p>
-                <p><strong>Status:</strong>
-                    {% if user.is_active %}
-                    <span class="badge bg-success">Active</span>
-                    {% else %}
-                    <span class="badge bg-danger">Inactive</span>
-                    {% endif %}
-                </p>
+            <div class="info-row">
+                <span class="info-label">Role</span>
+                <span class="info-value">{{ user.get_role_display }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ user.email|default:"Not set" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Phone</span>
+                <span class="info-value">{{ user.phone_number|default:"Not set" }}</span>
+            </div>
+            {% if user.hospital %}
+            <div class="info-row">
+                <span class="info-label">Hospital</span>
+                <span class="info-value">{{ user.hospital.name }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span class="info-label">Joined</span>
+                <span class="info-value">{{ user.date_joined|date:"M d, Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Last Login</span>
+                <span class="info-value">{{ user.last_login|timesince }} ago</span>
             </div>
         </div>
     </div>

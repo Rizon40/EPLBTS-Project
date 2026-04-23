@@ -7,81 +7,200 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Hospitals &rsaquo; Capacity Update{% endblock %}
+
 {% block content %}
-<h3>🏥 Update Hospital Status</h3>
-<p class="text-muted">Hospital: <strong>{{ hospital.name }}</strong></p>
-<hr>
+<style>
+    .page-title { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
+    .form-section {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 18px; }
 
-                    <h5 class="text-primary mb-3">🛏️ Bed Availability</h5>
+    .capacity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .capacity-box {
+        border: 1px solid var(--border-color); border-radius: 10px; padding: 16px;
+    }
+    .capacity-box .box-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+    .capacity-row { display: flex; gap: 12px; margin-bottom: 10px; }
+    .capacity-row .field { flex: 1; }
+    .capacity-row .field label { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; display: block; }
+    .capacity-row .field input {
+        width: 100%; padding: 8px 12px; border: 1.5px solid var(--border-color);
+        border-radius: 8px; font-size: 14px; font-weight: 700; text-align: center;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .capacity-row .field input:focus { border-color: var(--accent-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label">ICU Total</label>
-                            {{ form.icu_total }}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">ICU Available</label>
-                            {{ form.icu_available }}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Bed Total</label>
-                            {{ form.bed_total }}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Bed Available</label>
-                            {{ form.bed_available }}
-                        </div>
+    /* Occupancy Bar */
+    .occupancy-bar { margin-top: 8px; }
+    .occupancy-track { height: 6px; background: var(--bg-main); border-radius: 3px; overflow: hidden; }
+    .occupancy-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .occupancy-fill.green { background: #10b981; }
+    .occupancy-fill.amber { background: #f59e0b; }
+    .occupancy-fill.red { background: #ef4444; }
+    .occupancy-label {
+        display: flex; justify-content: flex-end; margin-top: 4px;
+        font-size: 12px; font-weight: 700;
+    }
+    .occupancy-label.green { color: #10b981; }
+    .occupancy-label.amber { color: #f59e0b; }
+    .occupancy-label.red { color: #ef4444; }
+
+    /* Toggle Switches */
+    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .toggle-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 10px;
+    }
+    .toggle-item label { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin: 0; cursor: pointer; }
+    .form-check-input { width: 40px; height: 22px; cursor: pointer; }
+    .form-check-input:checked { background-color: var(--accent-blue); border-color: var(--accent-blue); }
+
+    /* ED Status */
+    .ed-status-group { display: flex; gap: 12px; margin-bottom: 14px; }
+    .ed-radio {
+        padding: 8px 20px; border: 1.5px solid var(--border-color); border-radius: 8px;
+        font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .ed-radio input { display: none; }
+    .ed-radio.open { color: #10b981; }
+    .ed-radio.closed { color: #ef4444; }
+    .ed-radio:has(input:checked).open { background: rgba(16,185,129,0.1); border-color: #10b981; }
+    .ed-radio:has(input:checked).closed { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+
+    .btn-save {
+        background: var(--accent-blue); color: #fff; border: none; border-radius: 10px;
+        padding: 13px 32px; font-size: 15px; font-weight: 700; cursor: pointer;
+        font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-save:hover { background: #2563eb; }
+
+    .last-updated { font-size: 12px; color: var(--text-secondary); margin-top: 12px; }
+
+    @media (max-width: 767.98px) {
+        .capacity-grid { grid-template-columns: 1fr; }
+        .toggle-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="page-title">Update Hospital Capacity</div>
+<p class="page-subtitle">Keep your facility's availability data current for accurate patient routing.</p>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <!-- Section 1: Bed Availability -->
+    <div class="form-section">
+        <div class="section-title">Section 1: Bed Availability</div>
+        <div class="capacity-grid">
+            <div class="capacity-box">
+                <div class="box-title">ICU Beds</div>
+                <div class="capacity-row">
+                    <div class="field">
+                        <label>Total Beds</label>
+                        <input type="number" name="icu_total" value="{{ form.icu_total.value|default:0 }}" min="0">
                     </div>
-
-                    <h5 class="text-warning mb-3 mt-4">⚕️ Facilities</h5>
-
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                {{ form.has_ventilator }}
-                                <label class="form-check-label">Ventilator</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                {{ form.has_blood_bank }}
-                                <label class="form-check-label">Blood Bank</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                {{ form.has_cath_lab }}
-                                <label class="form-check-label">Cath Lab</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                {{ form.is_accepting }}
-                                <label class="form-check-label">Accepting Patients</label>
-                            </div>
-                        </div>
+                    <div class="field">
+                        <label>Available</label>
+                        <input type="number" name="icu_available" value="{{ form.icu_available.value|default:0 }}" min="0" id="icuAvail" oninput="updateBar('icu')">
                     </div>
-
-                    {% if latest_status %}
-                    <div class="alert alert-info small mt-3">
-                        Last updated: {{ latest_status.updated_at }}
+                </div>
+                <div class="occupancy-bar" id="icuBar">
+                    <div class="occupancy-track"><div class="occupancy-fill red" style="width: 0%"></div></div>
+                    <div class="occupancy-label red">0%</div>
+                </div>
+            </div>
+            <div class="capacity-box">
+                <div class="box-title">General Beds</div>
+                <div class="capacity-row">
+                    <div class="field">
+                        <label>Total Beds</label>
+                        <input type="number" name="bed_total" value="{{ form.bed_total.value|default:0 }}" min="0">
                     </div>
-                    {% endif %}
-
-                    <hr>
-                    <button type="submit" class="btn btn-primary btn-lg">💾 Update Status</button>
-                </form>
+                    <div class="field">
+                        <label>Available</label>
+                        <input type="number" name="bed_available" value="{{ form.bed_available.value|default:0 }}" min="0" id="bedAvail" oninput="updateBar('bed')">
+                    </div>
+                </div>
+                <div class="occupancy-bar" id="bedBar">
+                    <div class="occupancy-track"><div class="occupancy-fill green" style="width: 0%"></div></div>
+                    <div class="occupancy-label green">0%</div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Section 2: Equipment & Facilities -->
+    <div class="form-section">
+        <div class="section-title">Section 2: Equipment & Facilities</div>
+        <div class="toggle-grid">
+            <div class="toggle-item">
+                <label for="id_has_ventilator"><i class="bi bi-lungs"></i> Ventilators Available</label>
+                <input type="checkbox" name="has_ventilator" id="id_has_ventilator" class="form-check-input"
+                       {% if form.has_ventilator.value %}checked{% endif %}>
+            </div>
+            <div class="toggle-item">
+                <label for="id_has_blood_bank"><i class="bi bi-droplet"></i> Blood Bank Available</label>
+                <input type="checkbox" name="has_blood_bank" id="id_has_blood_bank" class="form-check-input"
+                       {% if form.has_blood_bank.value %}checked{% endif %}>
+            </div>
+            <div class="toggle-item">
+                <label for="id_has_cath_lab"><i class="bi bi-heart-pulse"></i> Cardiac Care (Cath Lab)</label>
+                <input type="checkbox" name="has_cath_lab" id="id_has_cath_lab" class="form-check-input"
+                       {% if form.has_cath_lab.value %}checked{% endif %}>
+            </div>
+            <div class="toggle-item">
+                <label for="id_is_accepting"><i class="bi bi-hospital"></i> Accepting Patients</label>
+                <input type="checkbox" name="is_accepting" id="id_is_accepting" class="form-check-input"
+                       {% if form.is_accepting.value %}checked{% endif %}>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save -->
+    <div class="d-flex align-items-center justify-content-between">
+        <a href="{% url 'dashboard' %}" style="color:var(--text-secondary); text-decoration:none; font-weight:600; font-size:14px;">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+        <button type="submit" class="btn-save">
+            <i class="bi bi-check-circle"></i> Save & Publish Status
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateBar(type) {
+        var totalInput = document.querySelector('input[name="'+type+'_total"]');
+        var availInput = document.querySelector('input[name="'+type+'_available"]');
+        var bar = document.getElementById(type === 'icu' ? 'icuBar' : 'bedBar');
+
+        var total = parseInt(totalInput.value) || 0;
+        var avail = parseInt(availInput.value) || 0;
+        if (total === 0) return;
+
+        var occupancy = Math.round(((total - avail) / total) * 100);
+        occupancy = Math.max(0, Math.min(100, occupancy));
+
+        var color = occupancy > 80 ? 'red' : occupancy > 60 ? 'amber' : 'green';
+
+        bar.querySelector('.occupancy-fill').style.width = occupancy + '%';
+        bar.querySelector('.occupancy-fill').className = 'occupancy-fill ' + color;
+        bar.querySelector('.occupancy-label').className = 'occupancy-label ' + color;
+        bar.querySelector('.occupancy-label').textContent = occupancy + '%';
+    }
+
+    // Init bars on page load
+    updateBar('icu');
+    updateBar('bed');
+</script>
 {% endblock %}
 </body>
 </html>

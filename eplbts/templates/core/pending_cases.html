@@ -1,56 +1,296 @@
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Emergency &rsaquo; Transfer Tracking{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-title { font-size: 24px; font-weight: 800; margin-bottom: 2px; }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; }
+
+    /* Case Cards */
+    .case-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    .case-card:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .case-header {
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .case-id { font-weight: 800; color: var(--accent-blue); font-size: 15px; }
+    .triage-badge {
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 700;
+    }
+    .triage-badge.critical { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .triage-badge.urgent { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .triage-badge.stable { background: rgba(16,185,129,0.1); color: #10b981; }
+    .status-badge {
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+    .status-badge.pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .status-badge.referred { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .status-badge.transferred { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+    .status-badge.completed { background: rgba(16,185,129,0.1); color: #10b981; }
+    .case-type { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .case-meta {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Case Details */
+    .case-details {
+        padding: 0 22px 18px;
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+    .detail-item {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+    .detail-item strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    /* Transfer Timeline */
+    .timeline-section {
+        padding: 16px 22px 22px;
+        border-top: 1px solid var(--border-color);
+        background: rgba(248,250,252,0.5);
+    }
+    .timeline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        padding: 0 10px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: 40px;
+        right: 40px;
+        height: 3px;
+        background: var(--border-color);
+        z-index: 0;
+    }
+    .timeline-step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+    }
+    .timeline-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        margin: 0 auto 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        border: 3px solid var(--border-color);
+        background: var(--card-bg);
+        color: var(--text-secondary);
+    }
+    .timeline-dot.done {
+        background: #10b981;
+        border-color: #10b981;
+        color: #fff;
+    }
+    .timeline-dot.active {
+        background: var(--accent-blue);
+        border-color: var(--accent-blue);
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+    }
+    .timeline-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .timeline-label.active-label {
+        color: var(--accent-blue);
+    }
+
+    /* Action Buttons */
+    .case-actions {
+        padding: 0 22px 18px;
+        display: flex;
+        gap: 10px;
+    }
+    .btn-action {
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-action.primary {
+        background: var(--accent-blue);
+        color: #fff;
+    }
+    .btn-action.primary:hover { background: #2563eb; color: #fff; }
+    .btn-action.green {
+        background: #10b981;
+        color: #fff;
+    }
+    .btn-action.green:hover { background: #059669; }
+    .btn-action.outline {
+        background: transparent;
+        border: 1.5px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+    .btn-action.outline:hover { border-color: var(--text-secondary); }
+
+    /* Hospital Info on Transferred */
+    .hospital-info {
+        margin-left: auto;
+        text-align: right;
+    }
+    .hospital-info .label { font-size: 11px; color: var(--text-secondary); }
+    .hospital-info .name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .hospital-info .address { font-size: 12px; color: var(--text-secondary); }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+    }
+    .empty-state i {
+        font-size: 48px;
+        opacity: 0.3;
+        margin-bottom: 12px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h3>📋 Pending Emergency Cases</h3>
-<p class="text-muted">Cases waiting for hospital recommendation and transfer.</p>
-<hr>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <div class="page-title">Transfer Tracking</div>
+        <p class="page-subtitle">Monitor active patient transfers in real-time.</p>
+    </div>
+    <a href="{% url 'submit_triage' %}" class="btn-action primary">
+        <i class="bi bi-plus-lg"></i> New Triage
+    </a>
+</div>
 
 {% if cases %}
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Case ID</th>
-                <th>Type</th>
-                <th>Age / Gender</th>
-                <th>Location</th>
-                <th>Requirements</th>
-                <th>Phone</th>
-                <th>Time</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for case in cases %}
-            <tr>
-                <td><strong>#{{ case.id }}</strong></td>
-                <td>{{ case.get_case_type_display }}</td>
-                <td>{{ case.patient_age }} / {{ case.get_patient_gender_display }}</td>
-                <td>{{ case.location_text }}</td>
-                <td>
-                    {% if case.needs_icu %}<span class="badge bg-danger me-1">ICU</span>{% endif %}
-                    {% if case.needs_ventilator %}<span class="badge bg-warning me-1">Ventilator</span>{% endif %}
-                    {% if case.needs_blood_bank %}<span class="badge bg-info me-1">Blood Bank</span>{% endif %}
-                    {% if case.needs_cath_lab %}<span class="badge bg-secondary me-1">Cath Lab</span>{% endif %}
-                    {% if not case.needs_icu and not case.needs_ventilator and not case.needs_blood_bank and not case.needs_cath_lab %}
-                    <span class="text-muted">General</span>
-                    {% endif %}
-                </td>
-                <td>{{ case.phone_number|default:"N/A" }}</td>
-                <td>{{ case.created_at|timesince }} ago</td>
-                <td>
-                    <a href="{% url 'recommend_hospitals' pk=case.pk %}" class="btn btn-danger btn-sm">
-                        🏥 Find Hospital
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    {% for case in cases %}
+    <div class="case-card">
+        <!-- Header -->
+        <div class="case-header">
+            <span class="case-id">#EM-{{ case.id }}</span>
+            {% if case.triage_level %}
+            <span class="triage-badge {{ case.triage_level }}">{{ case.get_triage_level_display }}</span>
+            {% endif %}
+            <span class="case-type">{{ case.get_case_type_display }}</span>
+            <span class="status-badge {{ case.status }}">{{ case.get_status_display }}</span>
+            <span class="case-meta"><i class="bi bi-clock"></i> {{ case.created_at|timesince }} ago</span>
+        </div>
+
+        <!-- Details -->
+        <div class="case-details">
+            <div class="detail-item"><i class="bi bi-person"></i> Age: <strong>{{ case.patient_age }}</strong>, {{ case.get_patient_gender_display }}</div>
+            {% if case.phone_number %}
+    &nbsp;&nbsp; <i class="bi bi-telephone"></i> <a href="tel:{{ case.phone_number }}" style="color:#10b981; text-decoration:none; font-weight:600;">{{ case.phone_number }}</a>
+{% endif %}
+            <div class="detail-item"><i class="bi bi-geo-alt"></i> <strong>{{ case.location_text }}</strong></div>
+            {% if case.needs_icu %}<div class="detail-item"><i class="bi bi-heart-pulse"></i> <strong>ICU</strong></div>{% endif %}
+            {% if case.needs_ventilator %}<div class="detail-item"><i class="bi bi-lungs"></i> <strong>Ventilator</strong></div>{% endif %}
+            {% if case.needs_blood_bank %}<div class="detail-item"><i class="bi bi-droplet"></i> <strong>Blood Bank</strong></div>{% endif %}
+        </div>
+
+        <!-- Transfer Timeline (if referred/transferred) -->
+        {% if case.status == 'referred' or case.status == 'transferred' or case.status == 'completed' %}
+        <div class="timeline-section">
+            <div class="timeline">
+                <div class="timeline-step">
+                    <div class="timeline-dot done"><i class="bi bi-check-lg"></i></div>
+                    <div class="timeline-label">Triage Submitted</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot {% if case.status == 'referred' %}active{% elif case.status == 'transferred' or case.status == 'completed' %}done{% endif %}">
+                        {% if case.status == 'referred' %}<i class="bi bi-hourglass-split"></i>{% else %}<i class="bi bi-check-lg"></i>{% endif %}
+                    </div>
+                    <div class="timeline-label {% if case.status == 'referred' %}active-label{% endif %}">Hospital Notified</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot {% if case.status == 'transferred' %}active{% elif case.status == 'completed' %}done{% endif %}">
+                        {% if case.status == 'transferred' %}<i class="bi bi-truck"></i>{% elif case.status == 'completed' %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-circle"></i>{% endif %}
+                    </div>
+                    <div class="timeline-label {% if case.status == 'transferred' %}active-label{% endif %}">In Transit</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="timeline-dot {% if case.status == 'completed' %}done{% endif %}">
+                        {% if case.status == 'completed' %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-circle"></i>{% endif %}
+                    </div>
+                    <div class="timeline-label">Delivered</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="case-actions">
+            {% if case.status == 'pending' %}
+                <a href="{% url 'recommend_hospitals' case.pk %}" class="btn-action primary">
+                    <i class="bi bi-search"></i> Find Hospital
+                </a>
+            {% elif case.status == 'transferred' %}
+                <a href="#" class="btn-action green">
+                    <i class="bi bi-check-circle"></i> Mark as Delivered
+                </a>
+                <a href="#" class="btn-action outline">
+                    <i class="bi bi-exclamation-triangle"></i> Report Issue
+                </a>
+            {% elif case.status == 'completed' %}
+                <span class="btn-action outline" style="cursor:default;">
+                    <i class="bi bi-check-circle-fill" style="color:#10b981;"></i> Completed
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
 {% else %}
-<div class="alert alert-success">
-    ✅ No pending cases at the moment.
-</div>
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p style="font-size:15px; font-weight:600;">No pending cases</p>
+        <p>Submit a new triage to get started.</p>
+        <a href="{% url 'submit_triage' %}" class="btn-action primary" style="display:inline-flex; margin-top:12px;">
+            <i class="bi bi-plus-lg"></i> Submit Triage
+        </a>
+    </div>
 {% endif %}
 {% endblock %}

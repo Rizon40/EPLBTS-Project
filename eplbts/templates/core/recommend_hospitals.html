@@ -1,143 +1,372 @@
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Emergency &rsaquo; Recommendations{% endblock %}
+
 {% block content %}
-<h3>🏥 Hospital Recommendations</h3>
-<p class="text-muted">
-    Case #{{ event.id }} — {{ event.get_case_type_display }}
-    | Patient: {{ event.patient_age }} yrs, {{ event.get_patient_gender_display }}
-    | Location: {{ event.location_text }}
-</p>
-<hr>
+<style>
+    .page-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
 
-{% if recommendations %}
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
 
-<div id="map" style="height: 400px; border-radius: 10px; margin-bottom: 20px;"></div>
+    /* Case Info Bar */
+    .case-info-bar {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
 
-<div class="row g-3">
-    {% for rec in recommendations %}
-    <div class="col-md-4">
-        <div class="card shadow {% if forloop.first %}border-success{% endif %}">
-            {% if forloop.first %}
-            <div class="card-header bg-success text-white text-center">
-                ⭐ Best Match
-            </div>
-            {% endif %}
-            <div class="card-body">
-                <h5>{{ rec.hospital.name }}</h5>
-                <p class="text-muted small">{{ rec.hospital.address }}</p>
+    .case-id {
+        color: var(--accent-blue);
+        font-weight: 800;
+        font-size: 15px;
+    }
 
-                <table class="table table-sm">
-                    <tr>
-                        <td>📍 Distance</td>
-                        <td><strong>{{ rec.distance_km }} km</strong></td>
-                    </tr>
-                    <tr>
-                        <td>⏱️ ETA</td>
-                        <td><strong>{{ rec.eta_minutes }} min</strong></td>
-                    </tr>
-                    <tr>
-                        <td>🛏️ ICU Load</td>
-                        <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-{% if rec.icu_load < 50 %}success{% elif rec.icu_load < 80 %}warning{% else %}danger{% endif %}"
-                                     style="width: {{ rec.icu_load }}%">
-                                    {{ rec.icu_load }}%
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>🛏️ Bed Load</td>
-                        <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-{% if rec.bed_load < 50 %}success{% elif rec.bed_load < 80 %}warning{% else %}danger{% endif %}"
-                                     style="width: {{ rec.bed_load }}%">
-                                    {{ rec.bed_load }}%
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>📊 Score</td>
-                        <td><strong>{{ rec.score }}</strong> <small class="text-muted">(lower = better)</small></td>
-                    </tr>
-                </table>
+    .case-type {
+        font-weight: 600;
+        font-size: 14px;
+    }
 
-                <div class="d-grid">
-                    <a href="{% url 'create_transfer' event_pk=event.pk hospital_pk=rec.hospital.pk %}"
-                       class="btn btn-{% if forloop.first %}success{% else %}primary{% endif %}">
-                        🚑 Select This Hospital
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+    .triage-pill {
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 700;
+    }
+
+    .triage-pill.critical {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .triage-pill.urgent {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .triage-pill.stable {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .case-location {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-left: auto;
+    }
+
+    /* Map */
+    #map {
+        height: 350px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+
+    /* Hospital Cards */
+    .hospital-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        transition: all 0.2s;
+    }
+
+    .hospital-card:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .rank-badge.r1 {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+    }
+
+    .rank-badge.r2 {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+    }
+
+    .rank-badge.r3 {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+    }
+
+    .hospital-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .hospital-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 3px;
+    }
+
+    .hospital-address {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .stat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        background: var(--bg-main);
+        color: var(--text-secondary);
+    }
+
+    .stat-chip i {
+        font-size: 13px;
+    }
+
+    .stat-chip strong {
+        color: var(--text-primary);
+    }
+
+    .score-section {
+        text-align: center;
+        padding: 0 12px;
+        flex-shrink: 0;
+    }
+
+    .score-value {
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .score-label {
+        font-size: 10px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    .btn-select-hospital {
+        background: var(--accent-blue);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .btn-select-hospital:hover {
+        background: #2563eb;
+        color: #fff;
+        transform: scale(1.02);
+    }
+
+    /* Empty State */
+    .empty-box {
+        text-align: center;
+        padding: 50px 20px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+    }
+
+    .empty-box i {
+        font-size: 48px;
+        color: var(--border-color);
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .empty-box p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 13px;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: var(--accent-blue);
+    }
+
+    @media (max-width: 767.98px) {
+        .hospital-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stats-row {
+            justify-content: center;
+        }
+
+        .case-location {
+            margin-left: 0;
+        }
+
+        .score-section {
+            padding: 8px 0;
+        }
+    }
+</style>
+
+<div class="page-title">Hospital Recommendations</div>
+<p class="page-subtitle">Top hospitals ranked by availability, distance, and required facilities.</p>
+
+<!-- Case Info -->
+<div class="case-info-bar">
+    <span class="case-id">#EM-{{ event.id }}</span>
+    <span class="case-type">{{ event.get_case_type_display }}</span>
+    {% if event.triage_level %}
+    <span class="triage-pill {{ event.triage_level }}">{{ event.get_triage_level_display }}</span>
+    {% endif %}
+    <span class="case-location"><i class="bi bi-geo-alt"></i> {{ event.location_text }}</span>
+    {% if event.phone_number %}
+    &nbsp;&nbsp; <i class="bi bi-telephone-fill"></i> <a href="tel:{{ event.phone_number }}" style="color:#10b981; text-decoration:none; font-weight:600;">{{ event.phone_number }}</a>
+{% endif %}
 </div>
 
-<!-- Pass JSON data safely -->
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Hospital Cards -->
+{% if recommendations %}
+{% for rec in recommendations %}
+<div class="hospital-card">
+    <div class="rank-badge r{{ forloop.counter }}">{{ forloop.counter }}</div>
+    <div class="hospital-info">
+        <div class="hospital-name">{{ rec.hospital.name }}</div>
+        <div class="hospital-address"><i class="bi bi-geo-alt"></i> {{ rec.hospital.address }}</div>
+        <div class="stats-row">
+            <span class="stat-chip"><i class="bi bi-signpost-2"></i> <strong>{{ rec.distance_km }} km</strong></span>
+            <span class="stat-chip"><i class="bi bi-clock"></i> ETA <strong>{{ rec.eta_minutes }} min</strong></span>
+            <span class="stat-chip"><i class="bi bi-heart-pulse"></i> ICU <strong>{{ rec.status.icu_available }}/{{ rec.status.icu_total }}</strong></span>
+            <span class="stat-chip"><i class="bi bi-hospital"></i> Beds <strong>{{ rec.status.bed_available }}/{{ rec.status.bed_total }}</strong></span>
+            {% if rec.status.has_ventilator %}<span class="stat-chip"
+                                                    style="background:rgba(16,185,129,0.1); color:#10b981;"><i
+                class="bi bi-check-circle-fill"></i> Ventilator</span>{% endif %}
+            {% if rec.status.has_blood_bank %}<span class="stat-chip"
+                                                    style="background:rgba(239,68,68,0.1); color:#ef4444;"><i
+                class="bi bi-droplet-fill"></i> Blood Bank</span>{% endif %}
+        </div>
+    </div>
+    <div class="score-section">
+        <div class="score-value">{{ rec.score }}</div>
+        <div class="score-label">Score</div>
+    </div>
+    <a href="{% url 'create_transfer' event.pk rec.hospital.pk %}" class="btn-select-hospital"
+       onclick="return confirm('Send transfer request to {{ rec.hospital.name }}?')">
+        Select <i class="bi bi-arrow-right"></i>
+    </a>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-box">
+    <i class="bi bi-hospital"></i>
+    <p><strong>No suitable hospitals found</strong><br>Please check if hospitals have updated their status.</p>
+</div>
+{% endif %}
+
+<a href="{% url 'pending_cases' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Back to Pending Cases
+</a>
+
 {{ map_data|json_script:"map-data" }}
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
     var data = JSON.parse(document.getElementById('map-data').textContent);
-
     var map = L.map('map').setView([23.8103, 90.4125], 12);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     var bounds = [];
-
-    // Patient marker (red)
-    if (data.patient.lat && data.patient.lng) {
-        var patientIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-        });
-
-        L.marker([data.patient.lat, data.patient.lng], {icon: patientIcon})
-            .addTo(map)
-            .bindPopup('<strong>🚨 Patient Location</strong><br>' + data.patient.location)
-            .openPopup();
-
-        bounds.push([data.patient.lat, data.patient.lng]);
-    }
-
-    // Hospital markers (green)
-    var hospitalIcon = L.icon({
+    var redIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
+    });
+    var greenIcon = L.icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
     });
 
-    data.hospitals.forEach(function(h) {
-        L.marker([h.lat, h.lng], {icon: hospitalIcon})
-            .addTo(map)
-            .bindPopup('<strong>🏥 ' + h.name + '</strong><br>Distance: ' + h.distance + ' km<br>ETA: ' + h.eta + ' min');
-
-        bounds.push([h.lat, h.lng]);
-    });
-
-    if (bounds.length > 0) {
-        map.fitBounds(bounds, {padding: [50, 50]});
+    if (data.patient && data.patient.lat && data.patient.lng) {
+        L.marker([data.patient.lat, data.patient.lng], {icon: redIcon})
+            .addTo(map).bindPopup('<strong>📍 Patient Location</strong><br>' + (data.patient.location || ''));
+        bounds.push([data.patient.lat, data.patient.lng]);
     }
+    if (data.hospitals) {
+        data.hospitals.forEach(function (h) {
+            L.marker([h.lat, h.lng], {icon: greenIcon})
+                .addTo(map).bindPopup('<strong>🏥 ' + h.name + '</strong><br>Distance: ' + h.distance + ' km<br>ETA: ' + h.eta + ' min');
+            bounds.push([h.lat, h.lng]);
+        });
+    }
+    if (bounds.length > 0) map.fitBounds(bounds, {padding: [50, 50]});
 </script>
-
-{% else %}
-<div class="alert alert-warning">
-    ⚠️ No suitable hospitals found matching the requirements.
-    <br>Please check if hospitals have updated their status.
-</div>
-{% endif %}
-
-<a href="{% url 'pending_cases' %}" class="btn btn-outline-secondary mt-3">← Back to Pending Cases</a>
 {% endblock %}

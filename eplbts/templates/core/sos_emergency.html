@@ -7,85 +7,294 @@
 <body>
 {% extends 'base.html' %}
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow border-danger">
-            <div class="card-header bg-danger text-white text-center">
-                <h3>🆘 SOS Emergency</h3>
-                <small>No login required — submit your emergency now</small>
-            </div>
-            <div class="card-body p-4">
-                <form method="POST">
-                    {% csrf_token %}
+{% block breadcrumb %}Patient SOS{% endblock %}
 
-                    <div class="mb-3">
-                        <label class="form-label">Emergency Type</label>
-                        {{ form.case_type }}
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Your Age</label>
-                            {{ form.patient_age }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Gender</label>
-                            {{ form.patient_gender }}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">📞 Contact Phone Number</label>
-                        {{ form.phone_number }}
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">📍 Your Location</label>
-                        {{ form.location_text }}
-                    </div>
-
-                    <!-- Hidden lat/lng fields -->
-                    <input type="hidden" name="latitude" id="sos_latitude">
-                    <input type="hidden" name="longitude" id="sos_longitude">
-
-                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="autoDetectSOS()">
-                        📍 Auto-Detect My Location
-                    </button>
-                    <span id="sosLocStatus" class="text-muted small ms-2"></span>
-
-                    <div class="mb-3">
-                        <label class="form-label">Description (Optional)</label>
-                        {{ form.description }}
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger btn-lg">🚨 Send SOS Emergency</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function autoDetectSOS() {
-    var statusEl = document.getElementById('sosLocStatus');
-    statusEl.textContent = 'Detecting location...';
-
-    if (!navigator.geolocation) {
-        statusEl.textContent = 'Geolocation not supported.';
-        return;
+{% block extra_css %}
+<style>
+    .sos-header {
+        text-align: center;
+        margin-bottom: 28px;
+    }
+    .sos-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(239,68,68,0.1);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 30px;
+        color: #ef4444;
+    }
+    .sos-header h2 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    .sos-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
     }
 
-    navigator.geolocation.getCurrentPosition(function(position) {
-        document.getElementById('sos_latitude').value = position.coords.latitude.toFixed(5);
-        document.getElementById('sos_longitude').value = position.coords.longitude.toFixed(5);
-        statusEl.textContent = 'Location detected!';
-    }, function(error) {
-        statusEl.textContent = 'Location access denied.';
+    .sos-form {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .form-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 16px;
+    }
+    .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+    }
+    .form-label-sm {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+    .form-control, .form-select {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+    }
+
+    /* Emergency Type Quick Select */
+    .sos-type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .sos-type-card {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--card-bg);
+    }
+    .sos-type-card:hover { border-color: #ef4444; }
+    .sos-type-card.selected {
+        border-color: #ef4444;
+        background: rgba(239,68,68,0.04);
+        box-shadow: 0 0 0 3px rgba(239,68,68,0.08);
+    }
+    .sos-type-card .icon { font-size: 22px; margin-bottom: 6px; display: block; }
+    .sos-type-card .label { font-size: 11.5px; font-weight: 600; color: var(--text-primary); }
+
+    /* GPS */
+    .gps-row { display: flex; gap: 10px; }
+    .btn-gps {
+        border: 1.5px solid #ef4444;
+        background: rgba(239,68,68,0.06);
+        color: #ef4444;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .btn-gps:hover { background: rgba(239,68,68,0.12); }
+
+    .btn-sos-submit {
+        width: 100%;
+        padding: 15px;
+        background: #ef4444;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 800;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+    .btn-sos-submit:hover { background: #dc2626; }
+
+    .emergency-number {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+    .emergency-number a {
+        color: #ef4444;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    @media (max-width: 575.98px) {
+        .sos-type-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sos-form">
+
+    <div class="sos-header">
+        <div class="sos-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+        <h2>SOS Emergency</h2>
+        <p>Request emergency assistance. No login required.</p>
+    </div>
+
+    <!-- Alerts -->
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+
+    <form method="POST" id="sosForm">
+        {% csrf_token %}
+        <input type="hidden" name="case_type" id="sos_case_type">
+        <input type="hidden" name="latitude" id="sos_latitude">
+        <input type="hidden" name="longitude" id="sos_longitude">
+
+        <!-- Emergency Type -->
+        <div class="form-section">
+            <div class="section-title">What is the emergency?</div>
+            <div class="sos-type-grid">
+                <div class="sos-type-card" data-value="accident" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-truck" style="color:#ef4444;"></i></span>
+                    <span class="label">Accident</span>
+                </div>
+                <div class="sos-type-card" data-value="heart_attack" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-heart-pulse" style="color:#ec4899;"></i></span>
+                    <span class="label">Cardiac</span>
+                </div>
+                <div class="sos-type-card" data-value="stroke" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-lightning" style="color:#8b5cf6;"></i></span>
+                    <span class="label">Stroke</span>
+                </div>
+                <div class="sos-type-card" data-value="burn" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-fire" style="color:#f59e0b;"></i></span>
+                    <span class="label">Burns</span>
+                </div>
+                <div class="sos-type-card" data-value="respiratory" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-lungs" style="color:#0ea5e9;"></i></span>
+                    <span class="label">Breathing</span>
+                </div>
+                <div class="sos-type-card" data-value="other" onclick="selectSOSType(this)">
+                    <span class="icon"><i class="bi bi-question-circle" style="color:#64748b;"></i></span>
+                    <span class="label">Other</span>
+                </div>
+            </div>
+
+            <div class="form-label-sm mb-2">Brief Description</div>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="Briefly describe the emergency..."></textarea>
+        </div>
+
+        <!-- Patient Info -->
+        <div class="form-section">
+            <div class="section-title">Patient Information</div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <div class="form-label-sm mb-2">Age</div>
+                    <input type="number" name="patient_age" class="form-control" placeholder="Age" value="30" min="0" max="120">
+                </div>
+                <div class="col-6">
+                    <div class="form-label-sm mb-2">Gender</div>
+                    <select name="patient_gender" class="form-select">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-label-sm mb-2">Contact Phone</div>
+            <input type="text" name="phone_number" class="form-control mb-3" placeholder="+880 1XXX-XXXXXX">
+
+            <div class="form-label-sm mb-2">Location</div>
+            <div class="gps-row">
+                <input type="text" name="location_text" id="sos_location" class="form-control"
+                       placeholder="Enter address or use GPS" style="flex:1;">
+                <button type="button" class="btn-gps" onclick="detectSOSLocation()">
+                    <i class="bi bi-geo-alt-fill"></i> GPS
+                </button>
+            </div>
+            <div id="sosGpsStatus" style="font-size:12px; color:var(--text-secondary); margin-top:6px;"></div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-sos-submit">
+            <i class="bi bi-lightning-charge-fill"></i> Request Emergency Help
+        </button>
+    </form>
+
+    <div class="emergency-number">
+        Or call emergency directly: <a href="tel:999">999</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectSOSType(card) {
+        document.querySelectorAll('.sos-type-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        document.getElementById('sos_case_type').value = card.dataset.value;
+    }
+
+    function detectSOSLocation() {
+        const status = document.getElementById('sosGpsStatus');
+        status.innerHTML = '<i class="bi bi-arrow-repeat"></i> Detecting...';
+
+        if (!navigator.geolocation) {
+            status.innerHTML = '<span style="color:#ef4444;">Geolocation not supported.</span>';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                document.getElementById('sos_latitude').value = pos.coords.latitude;
+                document.getElementById('sos_longitude').value = pos.coords.longitude;
+                document.getElementById('sos_location').value =
+                    'Lat: ' + pos.coords.latitude.toFixed(5) + ', Lng: ' + pos.coords.longitude.toFixed(5);
+                status.innerHTML = '<span style="color:#10b981;"><i class="bi bi-check-circle-fill"></i> Location detected!</span>';
+            },
+            function() {
+                status.innerHTML = '<span style="color:#ef4444;">Location access denied.</span>';
+            }
+        );
+    }
+
+    document.getElementById('sosForm').addEventListener('submit', function(e) {
+        if (!document.getElementById('sos_case_type').value) {
+            e.preventDefault();
+            alert('Please select the type of emergency.');
+        }
     });
-}
 </script>
 {% endblock %}
 </body>

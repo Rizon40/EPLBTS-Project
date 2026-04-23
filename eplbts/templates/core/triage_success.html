@@ -7,26 +7,121 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Emergency &rsaquo; Triage Submitted{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-wrapper {
+        max-width: 560px;
+        margin: 40px auto;
+        text-align: center;
+    }
+    .success-icon {
+        width: 72px;
+        height: 72px;
+        background: rgba(16,185,129,0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 34px;
+        color: #10b981;
+    }
+    .success-wrapper h2 {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+    .success-wrapper .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; }
+    .case-summary {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 22px;
+        text-align: left;
+        margin-bottom: 24px;
+    }
+    .case-summary .row-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 13.5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .case-summary .row-item:last-child { border: none; }
+    .case-summary .label { color: var(--text-secondary); }
+    .case-summary .value { font-weight: 600; color: var(--text-primary); }
+    .action-btns { display: flex; gap: 12px; justify-content: center; }
+    .btn-primary-action {
+        background: var(--accent-blue);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .btn-primary-action:hover { background: #2563eb; color: #fff; }
+    .btn-outline-action {
+        background: transparent;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-outline-action:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card shadow border-success">
-            <div class="card-body text-center p-5">
-                <h1 class="text-success">✅</h1>
-                <h3>Triage Submitted Successfully!</h3>
-                <hr>
-                <p><strong>Case ID:</strong> #{{ event.id }}</p>
-                <p><strong>Type:</strong> {{ event.get_case_type_display }}</p>
-                <p><strong>Patient:</strong> {{ event.patient_age }} yrs, {{ event.get_patient_gender_display }}</p>
-                <p><strong>Location:</strong> {{ event.location_text }}</p>
-                <p><strong>Status:</strong>
-                    <span class="badge bg-warning">{{ event.get_status_display }}</span>
-                </p>
-                <hr>
-                <a href="{% url 'submit_triage' %}" class="btn btn-danger">📝 Submit Another</a>
-                <a href="{% url 'hospital_list' %}" class="btn btn-outline-primary">🏥 View Hospitals</a>
-            </div>
+<div class="success-wrapper">
+    <div class="success-icon"><i class="bi bi-check-lg"></i></div>
+    <h2>Triage Submitted Successfully!</h2>
+    <p class="sub">Case <strong>#EM-{{ event.id }}</strong> has been recorded. Find the best hospital now.</p>
+
+    <div class="case-summary">
+        <div class="row-item">
+            <span class="label">Case ID</span>
+            <span class="value">#EM-{{ event.id }}</span>
         </div>
+        <div class="row-item">
+            <span class="label">Emergency Type</span>
+            <span class="value">{{ event.get_case_type_display }}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Patient</span>
+            <span class="value">{{ event.patient_age }} yrs, {{ event.get_patient_gender_display }}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Location</span>
+            <span class="value">{{ event.location_text }}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Status</span>
+            <span class="value" style="color:#f59e0b;">Pending</span>
+        </div>
+    </div>
+
+    <div class="action-btns">
+        <a href="{% url 'recommend_hospitals' event.pk %}" class="btn-primary-action">
+            <i class="bi bi-search"></i> Find Best Hospital
+        </a>
+        <a href="{% url 'pending_cases' %}" class="btn-outline-action">
+            <i class="bi bi-arrow-left"></i> All Cases
+        </a>
     </div>
 </div>
 {% endblock %}
