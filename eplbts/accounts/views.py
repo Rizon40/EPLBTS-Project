@@ -52,21 +52,83 @@ def logout_view(request):
     return redirect('login')
 
 
+# REPLACE your existing dashboard_view in accounts/views.py
+# with this updated version that passes stats to the template
 @login_required
 def dashboard_view(request):
     context = {'user': request.user}
 
+    # Paramedic stats
     if request.user.role == 'paramedic':
-        from core.models import PatientEvent
-        context['pending_count'] = PatientEvent.objects.filter(status='pending').count()
+        from core.models import PatientEvent, TransferRequest
+        from django.utils import timezone
+        today = timezone.now().date()
 
-    if request.user.role == 'hospital_admin' and request.user.hospital:
-        from core.models import TransferRequest, Notification
-        context['pending_transfers'] = TransferRequest.objects.filter(
-            hospital=request.user.hospital, status='pending'
+
+        context['transferred_today'] = TransferRequest.objects.filter(
+            requested_by=request.user, status='accepted', updated_at__date=today
         ).count()
-        context['unread_notifications'] = Notification.objects.filter(
-            hospital=request.user.hospital
+
+
+        context['pending_count'] = PatientEvent.objects.filter(status='pending').count()
+        context['active_cases'] = PatientEvent.objects.filter(
+            status__in=['pending', 'referred']
         ).count()
+
+
+        recent = PatientEvent.objects.order_by('-created_at')[:5]
+        for case in recent:
+            tr = TransferRequest.objects.filter(patient_event=case).first()
+            case.hospital_name = tr.hospital.name if tr and tr.hospital else '—'
+        context['recent_cases'] = recent
+        for case in recent:
+            tr = TransferRequest.objects.filter(patient_event=case).first()
+            case.hospital_name = tr.hospital.name if tr and tr.hospital else '—'
+        context['recent_cases'] = recent
+
+    # Hospital Admin stats
+    elif request.user.role == 'hospital_admin':
+        from core.models import TransferRequest, Notification, HospitalStatus
+        hospital = getattr(request.user, 'hospital', None)
+        if hospital:
+            context['hospital_name'] = hospital.name
+            context['pending_transfers'] = TransferRequest.objects.filter(
+                hospital=hospital, status='pending'
+            ).count()
+            context['unread_notifications'] = Notification.objects.filter(
+                hospital=hospital, status='sent'
+            ).count()
+
+            status = HospitalStatus.objects.filter(hospital=hospital).order_by('-updated_at').first()
+            if status:
+                context['icu_info'] = f"{status.icu_available}/{status.icu_total}"
+                context['bed_info'] = f"{status.bed_available}/{status.bed_total}"
+    # Authority stats
+    elif request.user.role == 'authority':
+        from core.models import Hospital, PatientEvent, TransferRequest
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        context['total_hospitals'] = Hospital.objects.filter(is_active=True).count()
+        context['total_active_cases'] = PatientEvent.objects.filter(
+            status__in=['pending', 'referred']
+        ).count()
+        context['total_transfers'] = TransferRequest.objects.filter(
+            created_at__date=today
+        ).count()
+
+    # System Admin stats
+    elif request.user.role == 'admin':
+        from core.models import Hospital, AuditLog
+        from accounts.models import CustomUser
+
+        context['total_users'] = CustomUser.objects.count()
+        context['total_hospitals'] = Hospital.objects.count()
+        context['total_logs'] = AuditLog.objects.count()
+
+    # Patient stats
+    elif request.user.role == 'patient':
+        from core.models import Hospital
+        context['total_hospitals'] = Hospital.objects.filter(is_active=True).count()
 
     return render(request, 'dashboard.html', context)

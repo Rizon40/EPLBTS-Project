@@ -34,12 +34,14 @@ urlpatterns = [
 
     # Notifications
     path('notifications/', views.hospital_notifications, name='hospital_notifications'),
+    path('notifications/<int:pk>/read/', views.mark_notification_read, name='mark_notification_read'),
 
     # Authority Dashboard
     path('authority/dashboard/', views.authority_dashboard, name='authority_dashboard'),
 
     # Audit Log
     path('audit/', views.audit_log_view, name='audit_log'),
+    path('audit/export/', views.export_audit_csv, name='export_audit_csv'),
 
     # System Admin — Hospitals
     path('system/hospitals/', views.manage_hospitals, name='manage_hospitals'),

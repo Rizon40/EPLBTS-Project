@@ -1,7 +1,6 @@
 import math
 from .models import Hospital, HospitalStatus
 
-# Straight line distance km.
 def haversine_distance(lat1, lon1, lat2, lon2):
 
     R = 6371  # Earth's radius in km
@@ -25,7 +24,7 @@ def estimate_eta(distance_km):
     eta_minutes = (distance_km / avg_speed) * 60
     return round(eta_minutes)
 
-# Top 3 hospitals rank
+
 def get_hospital_recommendations(patient_event):
 
     hospitals = Hospital.objects.filter(is_active=True)
@@ -33,7 +32,6 @@ def get_hospital_recommendations(patient_event):
     recommendations = []
 
     for hospital in hospitals:
-
         status = HospitalStatus.objects.filter(hospital=hospital).first()
 
         if not status:
@@ -42,6 +40,7 @@ def get_hospital_recommendations(patient_event):
         if not status.is_accepting:
             continue
 
+        # Step 3: Required facilities check
         if patient_event.needs_icu and status.icu_available <= 0:
             continue
         if patient_event.needs_ventilator and not status.has_ventilator:
@@ -66,9 +65,10 @@ def get_hospital_recommendations(patient_event):
             distance = 999
             eta = 99
 
-        icu_load = status.icu_load_percent if patient_event.needs_icu else 0
+        icu_load = status.icu_load_percent
         bed_load = status.bed_load_percent
 
+        # Combined score = (distance weight * distance) + (load weight * load)
         score = (0.4 * distance) + (0.3 * icu_load) + (0.3 * bed_load)
 
         recommendations.append({
