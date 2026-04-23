@@ -37,11 +37,13 @@ def submit_triage(request):
     return render(request, 'core/submit_triage.html', {'form': form})
 
 
+
 # 2. Triage Success Page
 @login_required
 def triage_success(request, pk):
     patient_event = get_object_or_404(PatientEvent, pk=pk)
     return render(request, 'core/triage_success.html', {'event': patient_event})
+
 
 # 3. Hospital Admin — Update Status
 @login_required
@@ -221,10 +223,16 @@ def create_transfer(request, event_pk, hospital_pk):
     patient_event = get_object_or_404(PatientEvent, pk=event_pk)
     hospital = get_object_or_404(Hospital, pk=hospital_pk)
 
-    # Check if transfer already exists
-    if TransferRequest.objects.filter(patient_event=patient_event).exists():
-        messages.warning(request, 'Transfer request already exists for this case.')
+    existing = TransferRequest.objects.filter(patient_event=patient_event).first()
+    if existing and existing.status == 'pending':
+        messages.error(request, 'Transfer request already pending for this case.')
         return redirect('pending_cases')
+    if existing and existing.status == 'accepted':
+        messages.error(request, 'This case is already accepted by a hospital.')
+        return redirect('pending_cases')
+    # Delete rejected transfer so new one can be created
+    if existing and existing.status == 'rejected':
+        existing.delete()
 
     # Create Transfer Request
     transfer = TransferRequest.objects.create(
@@ -274,10 +282,14 @@ def incoming_transfers(request):
         messages.error(request, 'No hospital assigned to your account.')
         return redirect('dashboard')
 
-    transfers = TransferRequest.objects.filter(hospital=hospital).order_by('-created_at')
+    pending_transfers = TransferRequest.objects.filter(hospital=hospital, status='pending').order_by('-created_at')
+    completed_transfers = TransferRequest.objects.filter(hospital=hospital,
+                                                         status__in=['accepted', 'rejected']).order_by('-created_at')[
+        :20]
 
     return render(request, 'core/incoming_transfers.html', {
-        'transfers': transfers,
+        'pending_transfers': pending_transfers,
+        'completed_transfers': completed_transfers,
         'hospital': hospital,
     })
 
@@ -343,17 +355,26 @@ def hospital_notifications(request):
         return redirect('dashboard')
 
     hospital = request.user.hospital
-
     if not hospital:
         messages.error(request, 'No hospital assigned.')
         return redirect('dashboard')
 
     notifications = Notification.objects.filter(hospital=hospital).order_by('-sent_at')
+    return render(request, 'core/notifications.html', {'notifications': notifications})
 
-    return render(request, 'core/notifications.html', {
-        'notifications': notifications,
-        'hospital': hospital,
-    })
+
+@login_required
+def mark_notification_read(request, pk):
+    if request.user.role != 'hospital_admin':
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    notification = get_object_or_404(Notification, pk=pk, hospital=request.user.hospital)
+    notification.status = 'read'
+    notification.save()
+    messages.success(request, 'Notification marked as read.')
+    return redirect('hospital_notifications')
+
 
 # 13. Authority — Monitoring Dashboard
 @login_required
@@ -362,6 +383,7 @@ def authority_dashboard(request):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
 
+    # Statistics
     total_cases = PatientEvent.objects.count()
     pending_cases_count = PatientEvent.objects.filter(status='pending').count()
     referred_cases = PatientEvent.objects.filter(status='referred').count()
@@ -397,8 +419,10 @@ def authority_dashboard(request):
     rejected_transfers = TransferRequest.objects.filter(status='rejected').count()
     pending_transfers = TransferRequest.objects.filter(status='pending').count()
 
+    # Recent cases
     recent_cases = PatientEvent.objects.all()[:10]
 
+    # Case type breakdown
     from django.db.models import Count
     case_type_stats = PatientEvent.objects.values('case_type').annotate(count=Count('id')).order_by('-count')
 
@@ -498,8 +522,6 @@ def edit_hospital(request, pk):
 
     return render(request, 'core/edit_hospital.html', {'hospital': hospital})
 
-
-
 # 18. System Admin — Delete Hospital
 @login_required
 def delete_hospital(request, pk):
@@ -564,10 +586,24 @@ def edit_user(request, pk):
 def user_profile(request):
     if request.method == 'POST':
         user = request.user
+        new_email = request.POST.get('email', '')
+        new_phone = request.POST.get('phone_number', '')
+
+        # Email duplicate check
+        from accounts.models import CustomUser
+        if new_email and CustomUser.objects.filter(email=new_email).exclude(pk=user.pk).exists():
+            messages.error(request, 'This email is already used by another account.')
+            return redirect('user_profile')
+
+        # Phone duplicate check
+        if new_phone and CustomUser.objects.filter(phone_number=new_phone).exclude(pk=user.pk).exists():
+            messages.error(request, 'This phone number is already used by another account.')
+            return redirect('user_profile')
+
         user.first_name = request.POST.get('first_name', '')
         user.last_name = request.POST.get('last_name', '')
-        user.email = request.POST.get('email', '')
-        user.phone_number = request.POST.get('phone_number', '')
+        user.email = new_email
+        user.phone_number = new_phone
         user.save()
 
         messages.success(request, 'Profile updated successfully!')
@@ -598,3 +634,34 @@ def reset_user_password(request, pk):
             messages.error(request, 'Passwords do not match.')
 
     return render(request, 'core/reset_user_password.html', {'reset_user': user})
+
+
+# Export Audit Log as CSV
+import csv
+from django.http import HttpResponse
+
+
+@login_required
+def export_audit_csv(request):
+    if request.user.role not in ['authority', 'admin']:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="audit_log.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'User', 'Role', 'Action', 'Description', 'Case ID'])
+
+    logs = AuditLog.objects.all()[:500]
+    for log in logs:
+        writer.writerow([
+            log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            log.performed_by.username if log.performed_by else 'System',
+            log.performed_by.get_role_display() if log.performed_by else '—',
+            log.get_action_display(),
+            log.description,
+            f'EM-{log.patient_event.id}' if log.patient_event else '—',
+        ])
+
+    return response
