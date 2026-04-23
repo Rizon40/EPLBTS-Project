@@ -721,3 +721,298 @@ class UserProfileTest(TestCase):
         })
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, 'Test')
+
+# ============================================================
+# STAGE 5 UNIT TESTS — NEW
+# ============================================================
+
+# --- SCRUM-60: Feature Enhancement Tests ---
+
+class TriageLevelFieldTest(TestCase):
+    """Stage 5: New triage_level field on PatientEvent"""
+
+    def setUp(self):
+        self.para = User.objects.create_user(
+            username='tl_para', password='Pass1234!', role='paramedic')
+
+    def test_triage_level_default_is_urgent(self):
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Dhaka', status='pending')
+        self.assertEqual(event.triage_level, 'urgent')
+
+    def test_triage_level_critical_saves(self):
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Dhaka', triage_level='critical',
+            status='pending')
+        self.assertEqual(event.triage_level, 'critical')
+
+    def test_triage_level_stable_saves(self):
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Dhaka', triage_level='stable',
+            status='pending')
+        self.assertEqual(event.triage_level, 'stable')
+
+
+class NewCaseTypesTest(TestCase):
+    """Stage 5: New case types — fracture, pediatric"""
+
+    def setUp(self):
+        self.para = User.objects.create_user(
+            username='ct_para', password='Pass1234!', role='paramedic')
+
+    def test_fracture_case_type_saves(self):
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='fracture',
+            patient_age=25, patient_gender='male',
+            location_text='Dhaka', status='pending')
+        self.assertEqual(event.case_type, 'fracture')
+
+    def test_pediatric_case_type_saves(self):
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='pediatric',
+            patient_age=5, patient_gender='female',
+            location_text='Dhaka', status='pending')
+        self.assertEqual(event.case_type, 'pediatric')
+
+
+class ExportAuditCSVTest(TestCase):
+    """Stage 5: CSV export of audit log"""
+
+    def setUp(self):
+        self.client = Client()
+        self.authority = User.objects.create_user(
+            username='csv_auth', password='Pass1234!', role='authority')
+        self.admin = User.objects.create_user(
+            username='csv_admin', password='Pass1234!', role='admin')
+        self.para = User.objects.create_user(
+            username='csv_para', password='Pass1234!', role='paramedic')
+
+    def test_authority_can_export_csv(self):
+        self.client.login(username='csv_auth', password='Pass1234!')
+        resp = self.client.get(reverse('export_audit_csv'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'text/csv')
+
+    def test_admin_can_export_csv(self):
+        self.client.login(username='csv_admin', password='Pass1234!')
+        resp = self.client.get(reverse('export_audit_csv'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_paramedic_cannot_export_csv(self):
+        self.client.login(username='csv_para', password='Pass1234!')
+        resp = self.client.get(reverse('export_audit_csv'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_csv_has_header_row(self):
+        self.client.login(username='csv_auth', password='Pass1234!')
+        resp = self.client.get(reverse('export_audit_csv'))
+        self.assertIn(b'Timestamp', resp.content)
+        self.assertIn(b'User', resp.content)
+
+    def test_csv_has_attachment_header(self):
+        self.client.login(username='csv_auth', password='Pass1234!')
+        resp = self.client.get(reverse('export_audit_csv'))
+        self.assertIn('attachment', resp['Content-Disposition'])
+
+
+class MarkNotificationReadTest(TestCase):
+    """Stage 5: Mark notification as read"""
+
+    def setUp(self):
+        self.client = Client()
+        self.hospital = Hospital.objects.create(
+            name='Notif Hospital', address='Dhaka',
+            latitude=23.76, longitude=90.39, phone_number='01700000080')
+        self.admin = User.objects.create_user(
+            username='notif_admin', password='Pass1234!',
+            role='hospital_admin', hospital=self.hospital)
+        self.para = User.objects.create_user(
+            username='notif_para', password='Pass1234!', role='paramedic')
+
+        event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Dhaka', status='pending')
+        tr = TransferRequest.objects.create(
+            patient_event=event, hospital=self.hospital,
+            requested_by=self.para, status='pending')
+        self.notif = Notification.objects.create(
+            hospital=self.hospital, transfer_request=tr,
+            message='Test notification', status='sent')
+
+    def test_hospital_admin_can_mark_read(self):
+        self.client.login(username='notif_admin', password='Pass1234!')
+        self.client.get(reverse('mark_notification_read', kwargs={'pk': self.notif.pk}))
+        self.notif.refresh_from_db()
+        self.assertEqual(self.notif.status, 'read')
+
+    def test_paramedic_cannot_mark_read(self):
+        self.client.login(username='notif_para', password='Pass1234!')
+        resp = self.client.get(reverse('mark_notification_read', kwargs={'pk': self.notif.pk}))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_login_required(self):
+        resp = self.client.get(reverse('mark_notification_read', kwargs={'pk': self.notif.pk}))
+        self.assertEqual(resp.status_code, 302)
+
+
+class DuplicateValidationTest(TestCase):
+    """Stage 5: Duplicate email/phone validation"""
+
+    def setUp(self):
+        self.client = Client()
+        User.objects.create_user(
+            username='existing_user', password='Pass1234!',
+            email='existing@test.com', phone_number='01711111111',
+            role='paramedic')
+
+    def test_duplicate_email_registration_blocked(self):
+        resp = self.client.post(reverse('register'), {
+            'username': 'new_user',
+            'email': 'existing@test.com',  # duplicate
+            'phone_number': '01722222222',
+            'password1': 'TestPass123!',
+            'password2': 'TestPass123!',
+            'role': 'paramedic',
+        })
+        # Should stay on register page (form error)
+        self.assertFalse(User.objects.filter(username='new_user').exists())
+
+    def test_duplicate_phone_registration_blocked(self):
+        resp = self.client.post(reverse('register'), {
+            'username': 'new_user2',
+            'email': 'unique@test.com',
+            'phone_number': '01711111111',  # duplicate
+            'password1': 'TestPass123!',
+            'password2': 'TestPass123!',
+            'role': 'paramedic',
+        })
+        self.assertFalse(User.objects.filter(username='new_user2').exists())
+
+    def test_unique_email_and_phone_allowed(self):
+        resp = self.client.post(reverse('register'), {
+            'username': 'brand_new',
+            'email': 'brand_new@test.com',
+            'phone_number': '01733333333',
+            'password1': 'TestPass123!',
+            'password2': 'TestPass123!',
+            'role': 'paramedic',
+        })
+        self.assertTrue(User.objects.filter(username='brand_new').exists())
+
+
+class TransferRequestStateHandlingTest(TestCase):
+    """Stage 5: State-aware transfer handling"""
+
+    def setUp(self):
+        self.client = Client()
+        self.hospital = Hospital.objects.create(
+            name='State Hospital', address='Dhaka',
+            latitude=23.76, longitude=90.39, phone_number='01700000090')
+        self.para = User.objects.create_user(
+            username='st_para', password='Pass1234!', role='paramedic')
+        self.event = PatientEvent.objects.create(
+            submitted_by=self.para, case_type='accident',
+            patient_age=30, patient_gender='male',
+            location_text='Dhaka', status='pending')
+
+    def test_pending_transfer_blocks_new_request(self):
+        TransferRequest.objects.create(
+            patient_event=self.event, hospital=self.hospital,
+            requested_by=self.para, status='pending')
+        self.client.login(username='st_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer', kwargs={
+            'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        self.assertEqual(TransferRequest.objects.count(), 1)
+
+    def test_rejected_transfer_allows_new_request(self):
+        TransferRequest.objects.create(
+            patient_event=self.event, hospital=self.hospital,
+            requested_by=self.para, status='rejected')
+        self.client.login(username='st_para', password='Pass1234!')
+        self.client.get(reverse('create_transfer', kwargs={
+            'event_pk': self.event.pk, 'hospital_pk': self.hospital.pk}))
+        # Old deleted, new one created = still 1 pending
+        self.assertEqual(TransferRequest.objects.filter(status='pending').count(), 1)
+
+
+# --- SCRUM-55: UI/UX Unit Tests ---
+
+class UIUXTemplateTest(TestCase):
+    """Stage 5: UI/UX template render tests"""
+
+    def setUp(self):
+        self.client = Client()
+        self.para = User.objects.create_user(
+            username='ui_para', password='Pass1234!', role='paramedic')
+        self.auth = User.objects.create_user(
+            username='ui_auth', password='Pass1234!', role='authority')
+        self.admin = User.objects.create_user(
+            username='ui_admin', password='Pass1234!', role='admin')
+
+    def test_dashboard_renders_for_paramedic(self):
+        self.client.login(username='ui_para', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_dashboard_renders_for_authority(self):
+        self.client.login(username='ui_auth', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_dashboard_renders_for_admin(self):
+        self.client.login(username='ui_admin', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_login_page_uses_base_template(self):
+        resp = self.client.get(reverse('login'))
+        self.assertEqual(resp.status_code, 200)
+        # New design markers
+        content = resp.content.decode().lower()
+        self.assertTrue(
+            'card' in content or 'section' in content or 'page-title' in content
+        )
+
+    def test_hospital_list_page_loads(self):
+        self.client.login(username='ui_para', password='Pass1234!')
+        resp = self.client.get(reverse('hospital_list'))
+        self.assertEqual(resp.status_code, 200)
+
+
+class RoleBasedDashboardContextTest(TestCase):
+    """Stage 5: Role-based dashboard context variables"""
+
+    def setUp(self):
+        self.client = Client()
+        self.hospital = Hospital.objects.create(
+            name='Dash Hospital', address='Dhaka',
+            latitude=23.76, longitude=90.39, phone_number='01700000100')
+        self.hosp_admin = User.objects.create_user(
+            username='dash_hadmin', password='Pass1234!',
+            role='hospital_admin', hospital=self.hospital)
+        self.authority = User.objects.create_user(
+            username='dash_auth', password='Pass1234!', role='authority')
+        self.admin = User.objects.create_user(
+            username='dash_sysadmin', password='Pass1234!', role='admin')
+
+    def test_hospital_admin_dashboard_has_hospital_context(self):
+        self.client.login(username='dash_hadmin', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertIn('hospital_name', resp.context)
+
+    def test_authority_dashboard_has_total_hospitals(self):
+        self.client.login(username='dash_auth', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertIn('total_hospitals', resp.context)
+
+    def test_admin_dashboard_has_total_users(self):
+        self.client.login(username='dash_sysadmin', password='Pass1234!')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertIn('total_users', resp.context)
