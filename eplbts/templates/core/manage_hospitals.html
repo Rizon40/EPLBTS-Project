@@ -7,55 +7,114 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Administration &rsaquo; Manage Hospitals{% endblock %}
+
 {% block content %}
-<h3>🏥 Manage Hospitals</h3>
-<p class="text-muted">Add, edit, or remove hospitals from the system.</p>
+<style>
+    .page-title { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 
-<a href="{% url 'add_hospital' %}" class="btn btn-success mb-3">➕ Add New Hospital</a>
-<hr>
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .btn-add {
+        background: var(--accent-blue); color: #fff; border: none; border-radius: 8px;
+        padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-add:hover { background: #2563eb; color: #fff; }
 
-{% if hospitals %}
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
+    .section-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 12px; overflow: hidden;
+    }
+
+    .hosp-table { width: 100%; }
+    .hosp-table th {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--text-secondary); padding: 12px 18px; background: #f8fafc;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .hosp-table td {
+        padding: 14px 18px; font-size: 13px; border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    .hosp-table tr:last-child td { border-bottom: none; }
+    .hosp-table tr:hover { background: rgba(59,130,246,0.02); }
+
+    .hosp-name { font-weight: 700; color: var(--text-primary); }
+    .hosp-address { font-size: 12px; color: var(--text-secondary); }
+
+    .specialty-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(59,130,246,0.08); color: var(--accent-blue); }
+
+    .active-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .active-badge.yes { background: rgba(16,185,129,0.1); color: #10b981; }
+    .active-badge.no { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+    .action-btns { display: flex; gap: 6px; }
+    .action-btn {
+        width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border-color);
+        background: transparent; cursor: pointer; display: flex;
+        align-items: center; justify-content: center; font-size: 14px;
+        color: var(--text-secondary); transition: all 0.2s; text-decoration: none;
+    }
+    .action-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .action-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+
+    .pagination-info { font-size: 12px; color: var(--text-secondary); padding: 14px 18px; }
+    .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+</style>
+
+<div class="page-title">Manage Hospitals</div>
+<p class="page-subtitle">Add, edit, and manage registered hospitals.</p>
+
+<div class="toolbar">
+    <a href="{% url 'add_hospital' %}" class="btn-add"><i class="bi bi-plus-lg"></i> Add New Hospital</a>
+</div>
+
+<div class="section-card">
+    <table class="hosp-table">
+        <thead>
             <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Address</th>
+                <th>Hospital</th>
                 <th>Specialty</th>
                 <th>Phone</th>
-                <th>Active</th>
+                <th>Coordinates</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for hospital in hospitals %}
             <tr>
-                <td>{{ hospital.id }}</td>
-                <td><strong>{{ hospital.name }}</strong></td>
-                <td>{{ hospital.address }}</td>
-                <td>{{ hospital.get_specialty_display }}</td>
-                <td>{{ hospital.phone_number }}</td>
+                <td>
+                    <div class="hosp-name">{{ hospital.name }}</div>
+                    <div class="hosp-address">{{ hospital.address|truncatewords:8 }}</div>
+                </td>
+                <td><span class="specialty-badge">{{ hospital.get_specialty_display }}</span></td>
+                <td>{{ hospital.phone_number|default:"—" }}</td>
+                <td style="font-size:11px; color:var(--text-secondary); font-family:monospace;">{{ hospital.latitude|floatformat:4 }}, {{ hospital.longitude|floatformat:4 }}</td>
                 <td>
                     {% if hospital.is_active %}
-                    <span class="badge bg-success">Active</span>
+                    <span class="active-badge yes">Active</span>
                     {% else %}
-                    <span class="badge bg-danger">Inactive</span>
+                    <span class="active-badge no">Inactive</span>
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'edit_hospital' pk=hospital.pk %}" class="btn btn-warning btn-sm">✏️ Edit</a>
-                    <a href="{% url 'delete_hospital' pk=hospital.pk %}" class="btn btn-danger btn-sm"
-                       onclick="return confirm('Are you sure you want to delete {{ hospital.name }}?')">🗑️ Delete</a>
+                    <div class="action-btns">
+                        <a href="{% url 'edit_hospital' pk=hospital.pk %}" class="action-btn" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'delete_hospital' pk=hospital.pk %}" class="action-btn danger" title="Delete"
+                           onclick="return confirm('Delete {{ hospital.name }}?')"><i class="bi bi-trash"></i></a>
+                    </div>
                 </td>
             </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty-state">No hospitals registered yet.</div></td></tr>
             {% endfor %}
         </tbody>
     </table>
+    <div class="pagination-info">Showing {{ hospitals|length }} hospitals</div>
 </div>
-{% else %}
-<div class="alert alert-warning">No hospitals added yet.</div>
-{% endif %}
 {% endblock %}
 </body>
 </html>

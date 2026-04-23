@@ -1,70 +1,402 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<h3>📋 Incoming Transfer Requests</h3>
-<p class="text-muted">Hospital: <strong>{{ hospital.name }}</strong></p>
-<hr>
+{% block breadcrumb %}Hospitals &rsaquo; Hospital Dashboard{% endblock %}
 
-{% if transfers %}
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Transfer ID</th>
-                <th>Case Type</th>
-                <th>Patient</th>
-                <th>Location</th>
-                <th>Phone</th>
-                <th>Requirements</th>
-                <th>Status</th>
-                <th>Time</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for transfer in transfers %}
-            <tr class="{% if transfer.status == 'pending' %}table-warning{% elif transfer.status == 'accepted' %}table-success{% elif transfer.status == 'rejected' %}table-danger{% endif %}">
-                <td><strong>#{{ transfer.id }}</strong></td>
-                <td>{{ transfer.patient_event.get_case_type_display }}</td>
-                <td>{{ transfer.patient_event.patient_age }} yrs, {{ transfer.patient_event.get_patient_gender_display }}</td>
-                <td>{{ transfer.patient_event.location_text }}</td>
-                <td>{{ transfer.patient_event.phone_number|default:"N/A" }}</td>
-                <td>
-                    {% if transfer.patient_event.needs_icu %}<span class="badge bg-danger me-1">ICU</span>{% endif %}
-                    {% if transfer.patient_event.needs_ventilator %}<span class="badge bg-warning me-1">Ventilator</span>{% endif %}
-                    {% if transfer.patient_event.needs_blood_bank %}<span class="badge bg-info me-1">Blood Bank</span>{% endif %}
-                    {% if transfer.patient_event.needs_cath_lab %}<span class="badge bg-secondary me-1">Cath Lab</span>{% endif %}
-                </td>
-                <td>
-                    <span class="badge bg-{% if transfer.status == 'pending' %}warning{% elif transfer.status == 'accepted' %}success{% elif transfer.status == 'rejected' %}danger{% else %}secondary{% endif %}">
-                        {{ transfer.get_status_display }}
-                    </span>
-                </td>
-                <td>{{ transfer.created_at|timesince }} ago</td>
-                <td>
-                    {% if transfer.status == 'pending' %}
-                    <a href="{% url 'respond_transfer' pk=transfer.pk action='accept' %}"
-                       class="btn btn-success btn-sm"
-                       onclick="return confirm('Accept this transfer?')">
-                        ✅ Accept
-                    </a>
-                    <a href="{% url 'respond_transfer' pk=transfer.pk action='reject' %}"
-                       class="btn btn-danger btn-sm"
-                       onclick="return confirm('Reject this transfer?')">
-                        ❌ Reject
-                    </a>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% block content %}
+<style>
+    .page-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .hospital-name-bar {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .stat-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .stat-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 18px 20px;
+    }
+
+    .stat-box .value {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .stat-box .label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    .stat-box .indicator {
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .indicator.red {
+        color: #ef4444;
+    }
+
+    .indicator.green {
+        color: #10b981;
+    }
+
+    .section-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .section-header {
+        padding: 16px 22px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .section-header h6 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .live-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #ef4444;
+    }
+
+    .live-dot::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ef4444;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1
+        }
+        50% {
+            opacity: 0.4
+        }
+    }
+
+    .transfer-item {
+        padding: 16px 22px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .transfer-item:last-child {
+        border-bottom: none;
+    }
+
+    .transfer-item:hover {
+        background: rgba(59, 130, 246, 0.02);
+    }
+
+    .transfer-case-id {
+        font-weight: 800;
+        color: var(--accent-blue);
+        font-size: 14px;
+        min-width: 70px;
+    }
+
+    .triage-pill {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .triage-pill.critical {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .triage-pill.urgent {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .triage-pill.stable {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .transfer-type {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .transfer-eta {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .transfer-tags {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .req-tag {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10.5px;
+        font-weight: 600;
+        background: rgba(59, 130, 246, 0.08);
+        color: var(--accent-blue);
+    }
+
+    .transfer-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-accept {
+        background: #10b981;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: 12.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .btn-accept:hover {
+        background: #059669;
+        color: #fff;
+    }
+
+    .btn-decline {
+        background: transparent;
+        color: #ef4444;
+        border: 1.5px solid rgba(239, 68, 68, 0.3);
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: 12.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-decline:hover {
+        background: rgba(239, 68, 68, 0.06);
+        color: #ef4444;
+    }
+
+    .status-pill {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .status-pill.accepted {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .status-pill.rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i {
+        font-size: 40px;
+        opacity: 0.3;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .history-header {
+        color: var(--text-secondary);
+    }
+
+    @media (max-width: 767.98px) {
+        .transfer-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .transfer-actions {
+            margin-left: 0;
+            margin-top: 8px;
+        }
+    }
+</style>
+
+<div class="hospital-name-bar">{{ hospital.name }}</div>
+<p class="page-subtitle">Manage capacity, respond to incoming emergencies, update resources.</p>
+
+<!-- Stats -->
+<div class="stat-row">
+    <div class="stat-box">
+        <div class="value">{{ pending_transfers|length }}</div>
+        <div class="label">Pending Requests</div>
+        {% if pending_transfers|length > 0 %}
+        <div class="indicator red"><i class="bi bi-exclamation-circle"></i> Needs attention</div>
+        {% else %}
+        <div class="indicator green"><i class="bi bi-check-circle"></i> All clear</div>
+        {% endif %}
+    </div>
+    <div class="stat-box">
+        <div class="value">{{ completed_transfers|length }}</div>
+        <div class="label">Completed Requests</div>
+        <div class="indicator green"><i class="bi bi-check-circle"></i> Processed</div>
+    </div>
+    <div class="stat-box">
+        <div class="value">Open</div>
+        <div class="label">Emergency Department</div>
+        <div class="indicator green"><i class="bi bi-check-circle"></i> Active</div>
+    </div>
 </div>
-{% else %}
-<div class="alert alert-info">
-    No transfer requests yet.
+
+<!-- ═══ Pending Requests (Active) ═══ -->
+<div class="section-card">
+    <div class="section-header">
+        <h6>Incoming Emergency Requests</h6>
+        {% if pending_transfers|length > 0 %}
+        <span class="live-dot">Live</span>
+        {% endif %}
+    </div>
+
+    {% if pending_transfers %}
+    {% for transfer in pending_transfers %}
+    <div class="transfer-item">
+        <span class="transfer-case-id">EM-{{ transfer.patient_event.id }}</span>
+        {% if transfer.patient_event.triage_level %}
+        <span class="triage-pill {{ transfer.patient_event.triage_level }}">{{ transfer.patient_event.get_triage_level_display }}</span>
+        {% endif %}
+        <div>
+            <div class="transfer-type">{{ transfer.patient_event.get_case_type_display }}</div>
+            <div class="transfer-eta">
+                <i class="bi bi-geo-alt"></i> {{ transfer.patient_event.location_text }}
+                &nbsp;&nbsp; <i class="bi bi-clock"></i> Requested {{ transfer.created_at|timesince }} ago
+            </div>
+            {% if transfer.requested_by.phone_number or transfer.patient_event.phone_number %}
+            <div style="margin-top:6px; display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px;">
+                {% if transfer.requested_by.phone_number %}
+                <span style="color:#3b82f6; font-weight:600;">
+                    <i class="bi bi-truck"></i> Paramedic:
+                    <a href="tel:{{ transfer.requested_by.phone_number }}" style="color:#3b82f6; text-decoration:none;">{{ transfer.requested_by.phone_number }}</a>
+                </span>
+                {% endif %}
+                {% if transfer.patient_event.phone_number %}
+                <span style="color:#10b981; font-weight:600;">
+                    <i class="bi bi-person"></i> Patient:
+                    <a href="tel:{{ transfer.patient_event.phone_number }}" style="color:#10b981; text-decoration:none;">{{ transfer.patient_event.phone_number }}</a>
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="transfer-tags">
+            {% if transfer.patient_event.needs_icu %}<span class="req-tag">ICU</span>{% endif %}
+            {% if transfer.patient_event.needs_ventilator %}<span class="req-tag">Ventilator</span>{% endif %}
+            {% if transfer.patient_event.needs_blood_bank %}<span class="req-tag">Blood Bank</span>{% endif %}
+            {% if transfer.patient_event.needs_cath_lab %}<span class="req-tag">Cardiac Care</span>{% endif %}
+        </div>
+        <div class="transfer-actions">
+            <a href="{% url 'respond_transfer' pk=transfer.pk action='accept' %}" class="btn-accept"
+               onclick="return confirm('Accept this transfer?')">
+                <i class="bi bi-check-lg"></i> Accept
+            </a>
+            <a href="{% url 'respond_transfer' pk=transfer.pk action='reject' %}" class="btn-decline"
+               onclick="return confirm('Decline this transfer?')">
+                <i class="bi bi-x-lg"></i> Decline
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-check-circle" style="color:#10b981; opacity:0.6;"></i>
+        <p>No pending requests. All caught up!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ═══ Completed History ═══ -->
+{% if completed_transfers %}
+<div class="section-card">
+    <div class="section-header">
+        <h6 class="history-header"><i class="bi bi-clock-history"></i> Transfer History</h6>
+        <span style="font-size:12px; color:var(--text-secondary);">{{ completed_transfers|length }} records</span>
+    </div>
+
+    {% for transfer in completed_transfers %}
+    <div class="transfer-item" style="opacity:0.8;">
+        <span class="transfer-case-id">EM-{{ transfer.patient_event.id }}</span>
+        {% if transfer.patient_event.triage_level %}
+        <span class="triage-pill {{ transfer.patient_event.triage_level }}">{{ transfer.patient_event.get_triage_level_display }}</span>
+        {% endif %}
+        <div>
+            <div class="transfer-type">{{ transfer.patient_event.get_case_type_display }}</div>
+            <div class="transfer-eta"><i class="bi bi-geo-alt"></i> {{ transfer.patient_event.location_text }}</div>
+        </div>
+        <div class="transfer-actions">
+            <span class="status-pill {{ transfer.status }}">{{ transfer.get_status_display }}</span>
+            <span style="font-size:11px; color:var(--text-secondary);"><i class="bi bi-clock"></i> {{ transfer.updated_at|timesince }} ago</span>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
+
 {% endblock %}

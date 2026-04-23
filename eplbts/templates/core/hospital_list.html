@@ -7,88 +7,185 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Hospitals{% endblock %}
+
 {% block content %}
-<h3>🏥 Hospital List</h3>
-<p class="text-muted">All registered hospitals and their current status.</p>
+<style>
+    .page-title { font-size: 26px; font-weight: 800; color: var(--text-primary); }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; }
 
-<button id="getLocationBtn" class="btn btn-outline-primary btn-sm mb-3" onclick="getMyLocation()">
-    📍 Show My Location & Distances
-</button>
-<span id="locationStatus" class="text-muted small ms-2"></span>
+    .top-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    }
+    .btn-locate {
+        background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;
+        border: none; border-radius: 10px; padding: 10px 20px; font-size: 13px;
+        font-weight: 700; cursor: pointer; display: inline-flex; align-items: center;
+        gap: 7px; font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s; box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+    }
+    .btn-locate:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(59,130,246,0.4); }
+    .loc-status { font-size: 12px; color: var(--text-secondary); }
 
-<hr>
+    #map {
+        height: 380px; border-radius: 14px; border: 1px solid var(--border-color);
+        margin-bottom: 28px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
 
-<div id="map" style="height: 400px; border-radius: 10px; margin-bottom: 20px;"></div>
+    /* Hospital Cards */
+    .hospital-grid { display: flex; flex-direction: column; gap: 12px; }
 
-{% if hospitals %}
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Hospital Name</th>
-                <th>Specialty</th>
-                <th>ICU (Available/Total)</th>
-                <th>Beds (Available/Total)</th>
-                <th>Ventilator</th>
-                <th>Blood Bank</th>
-                <th>Accepting</th>
-                <th>📍 Distance</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for hospital in hospitals %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td><strong>{{ hospital.name }}</strong></td>
-                <td>{{ hospital.get_specialty_display }}</td>
+    .hospital-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 0; overflow: hidden;
+        transition: all 0.25s; display: flex;
+    }
+    .hospital-card:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 20px rgba(59,130,246,0.1);
+        transform: translateY(-2px);
+    }
 
-                {% if hospital.latest_status %}
-                <td>
-                    <span class="badge bg-{% if hospital.latest_status.icu_available > 0 %}success{% else %}danger{% endif %}">
-                        {{ hospital.latest_status.icu_available }} / {{ hospital.latest_status.icu_total }}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge bg-{% if hospital.latest_status.bed_available > 0 %}success{% else %}danger{% endif %}">
-                        {{ hospital.latest_status.bed_available }} / {{ hospital.latest_status.bed_total }}
-                    </span>
-                </td>
-                <td>{% if hospital.latest_status.has_ventilator %}✅{% else %}❌{% endif %}</td>
-                <td>{% if hospital.latest_status.has_blood_bank %}✅{% else %}❌{% endif %}</td>
-                <td>
-                    {% if hospital.latest_status.is_accepting %}
-                    <span class="badge bg-success">Yes</span>
-                    {% else %}
-                    <span class="badge bg-danger">No</span>
-                    {% endif %}
-                </td>
-                {% else %}
-                <td colspan="5" class="text-muted">No status updated yet</td>
-                {% endif %}
+    .card-rank {
+        width: 56px; display: flex; align-items: center; justify-content: center;
+        font-size: 18px; font-weight: 800; flex-shrink: 0;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        color: var(--text-secondary); border-right: 1px solid var(--border-color);
+    }
 
-                <td>
-                    <span id="dist-{{ hospital.id }}" class="text-muted">—</span>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    .card-body-main { flex: 1; padding: 18px 22px; }
+
+    .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .hosp-name { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+    .specialty-pill {
+        padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+        background: rgba(59,130,246,0.08); color: #3b82f6;
+    }
+    .accepting-pill { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .accepting-pill.yes { background: rgba(16,185,129,0.1); color: #10b981; }
+    .accepting-pill.no { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+    .card-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stat-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        background: var(--bg-main); color: var(--text-secondary);
+    }
+    .stat-chip i { font-size: 14px; }
+    .stat-chip .val { color: var(--text-primary); font-weight: 700; }
+    .stat-chip.good .val { color: #10b981; }
+    .stat-chip.bad .val { color: #ef4444; }
+    .stat-chip.equip-yes { background: rgba(16,185,129,0.06); color: #10b981; }
+    .stat-chip.equip-no { background: rgba(100,116,139,0.06); color: #94a3b8; }
+
+    /* Distance Section */
+    .card-dist {
+        width: 120px; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; padding: 18px 12px; flex-shrink: 0;
+        border-left: 1px solid var(--border-color); background: rgba(248,250,252,0.5);
+    }
+    .dist-val { font-size: 18px; font-weight: 800; color: var(--accent-blue); line-height: 1; }
+    .dist-unit { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+    .dist-eta { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+    .dist-pending { color: var(--text-secondary); font-size: 12px; }
+
+    .no-status-msg { color: var(--text-secondary); font-size: 12.5px; font-style: italic; }
+
+    .results-count {
+        font-size: 12px; color: var(--text-secondary); margin-top: 16px;
+        padding: 0 4px;
+    }
+
+    .empty-state {
+        text-align: center; padding: 60px 20px; color: var(--text-secondary);
+        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px;
+    }
+    .empty-state i { font-size: 48px; opacity: 0.25; margin-bottom: 12px; display: block; }
+
+    @media (max-width: 767.98px) {
+        .hospital-card { flex-direction: column; }
+        .card-rank { width: 100%; height: 36px; border-right: none; border-bottom: 1px solid var(--border-color); }
+        .card-dist { width: 100%; flex-direction: row; gap: 8px; border-left: none; border-top: 1px solid var(--border-color); }
+    }
+</style>
+
+<div class="top-bar">
+    <div>
+        <div class="page-title">Hospital List</div>
+        <p class="page-subtitle">All registered hospitals and their real-time availability.</p>
+    </div>
+    <div>
+        <button class="btn-locate" onclick="getMyLocation()">
+            <i class="bi bi-crosshair"></i> Detect My Location
+        </button>
+        <div id="locationStatus" class="loc-status" style="margin-top:6px; text-align:right;"></div>
+    </div>
 </div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Hospital Cards -->
+{% if hospitals %}
+<div class="hospital-grid">
+    {% for hospital in hospitals %}
+    <div class="hospital-card">
+        <div class="card-rank">{{ forloop.counter }}</div>
+        <div class="card-body-main">
+            <div class="card-top">
+                <span class="hosp-name">{{ hospital.name }}</span>
+                <span class="specialty-pill">{{ hospital.get_specialty_display }}</span>
+                {% if hospital.latest_status %}
+                    {% if hospital.latest_status.is_accepting %}
+                    <span class="accepting-pill yes"><i class="bi bi-check-circle-fill"></i> Accepting</span>
+                    {% else %}
+                    <span class="accepting-pill no"><i class="bi bi-x-circle-fill"></i> Closed</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% if hospital.latest_status %}
+            <div class="card-stats">
+                <span class="stat-chip {% if hospital.latest_status.icu_available > 0 %}good{% else %}bad{% endif %}">
+                    <i class="bi bi-heart-pulse"></i> ICU
+                    <span class="val">{{ hospital.latest_status.icu_available }}/{{ hospital.latest_status.icu_total }}</span>
+                </span>
+                <span class="stat-chip {% if hospital.latest_status.bed_available > 0 %}good{% else %}bad{% endif %}">
+                    <i class="bi bi-hospital"></i> Beds
+                    <span class="val">{{ hospital.latest_status.bed_available }}/{{ hospital.latest_status.bed_total }}</span>
+                </span>
+                <span class="stat-chip {% if hospital.latest_status.has_ventilator %}equip-yes{% else %}equip-no{% endif %}">
+                    <i class="bi bi-{% if hospital.latest_status.has_ventilator %}check-circle-fill{% else %}x-circle{% endif %}"></i>
+                    Ventilator
+                </span>
+                <span class="stat-chip {% if hospital.latest_status.has_blood_bank %}equip-yes{% else %}equip-no{% endif %}">
+                    <i class="bi bi-{% if hospital.latest_status.has_blood_bank %}check-circle-fill{% else %}x-circle{% endif %}"></i>
+                    Blood Bank
+                </span>
+            </div>
+            {% else %}
+            <span class="no-status-msg"><i class="bi bi-info-circle"></i> Status not updated yet</span>
+            {% endif %}
+        </div>
+        <div class="card-dist" id="dist-{{ hospital.id }}">
+            <span class="dist-pending"><i class="bi bi-geo-alt"></i> —</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="results-count">Showing {{ hospitals|length }} hospitals</div>
 {% else %}
-<div class="alert alert-warning">No hospitals registered yet.</div>
+<div class="empty-state">
+    <i class="bi bi-hospital"></i>
+    <p><strong>No hospitals registered yet</strong><br>Hospitals will appear here once added.</p>
+</div>
 {% endif %}
 
-<!-- Pass JSON data safely from Django -->
 {{ hospitals_map_data|json_script:"hospitals-data" }}
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    // Get clean JSON data from Django (no localization issues)
     var hospitals = JSON.parse(document.getElementById('hospitals-data').textContent);
-
     var map = L.map('map').setView([23.8103, 90.4125], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,9 +195,7 @@
     var hospitalIcon = L.icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
     });
 
     var bounds = [];
@@ -113,14 +208,12 @@
                 'Specialty: ' + h.specialty + '<br>' +
                 'ICU: ' + h.icu + '<br>' +
                 'Beds: ' + h.beds + '<br>' +
-                (h.accepting ? '<span style="color:green">✅ Accepting</span>' : '<span style="color:red">❌ Not Accepting</span>')
+                (h.accepting ? '<span style="color:#10b981">✅ Accepting</span>' : '<span style="color:#ef4444">❌ Not Accepting</span>')
             );
         bounds.push([h.lat, h.lng]);
     });
 
-    if (bounds.length > 0) {
-        map.fitBounds(bounds, {padding: [50, 50]});
-    }
+    if (bounds.length > 0) map.fitBounds(bounds, {padding: [50, 50]});
 
     function haversineDistance(lat1, lon1, lat2, lon2) {
         var R = 6371;
@@ -136,59 +229,50 @@
     var userMarker = null;
 
     function getMyLocation() {
-        var statusEl = document.getElementById('locationStatus');
-        statusEl.textContent = 'Getting your location...';
+        var s = document.getElementById('locationStatus');
+        s.innerHTML = '<i class="bi bi-arrow-repeat"></i> Detecting location...';
 
         if (!navigator.geolocation) {
-            statusEl.textContent = 'Geolocation not supported.';
+            s.innerHTML = '<span style="color:#ef4444;">Geolocation not supported.</span>';
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
+        navigator.geolocation.getCurrentPosition(function(p) {
+            var uLat = p.coords.latitude;
+            var uLng = p.coords.longitude;
+            s.innerHTML = '<span style="color:#10b981;"><i class="bi bi-check-circle-fill"></i> Location found!</span>';
 
-            statusEl.textContent = 'Location found!';
-
-            var userIcon = L.icon({
+            var uIcon = L.icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
             });
 
-            if (userMarker) {
-                map.removeLayer(userMarker);
-            }
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.marker([uLat, uLng], {icon: uIcon})
+                .addTo(map).bindPopup('<strong>📍 You are here</strong>').openPopup();
 
-            userMarker = L.marker([userLat, userLng], {icon: userIcon})
-                .addTo(map)
-                .bindPopup('<strong>📍 You are here</strong>')
-                .openPopup();
-
-            var allBounds = [[userLat, userLng]];
+            var aB = [[uLat, uLng]];
 
             hospitals.forEach(function(h) {
-                var dist = haversineDistance(userLat, userLng, h.lat, h.lng);
-                var eta = Math.round((dist / 30) * 60);
-
-                var distEl = document.getElementById('dist-' + h.id);
-                if (distEl) {
-                    distEl.innerHTML = '<strong>' + dist + ' km</strong><br><small class="text-muted">~' + eta + ' min</small>';
+                var d = haversineDistance(uLat, uLng, h.lat, h.lng);
+                var e = Math.round((d / 30) * 60);
+                var el = document.getElementById('dist-' + h.id);
+                if (el) {
+                    el.innerHTML =
+                        '<span class="dist-val">' + d + '</span>' +
+                        '<span class="dist-unit">km away</span>' +
+                        '<span class="dist-eta"><i class="bi bi-clock"></i> ~' + e + ' min</span>';
                 }
-
-                allBounds.push([h.lat, h.lng]);
+                aB.push([h.lat, h.lng]);
             });
 
-            map.fitBounds(allBounds, {padding: [50, 50]});
-
-        }, function(error) {
-            statusEl.textContent = 'Location access denied.';
+            map.fitBounds(aB, {padding: [50, 50]});
+        }, function() {
+            s.innerHTML = '<span style="color:#ef4444;"><i class="bi bi-x-circle"></i> Location denied.</span>';
         });
     }
 </script>
-
 {% endblock %}
 </body>
 </html>
