@@ -7,45 +7,179 @@
 <body>
 {% extends 'base.html' %}
 
-{% block content %}
-<h3>📝 Audit Log</h3>
-<p class="text-muted">System-wide action history for accountability.</p>
-<hr>
+{% block breadcrumb %}Administration &rsaquo; Audit Logs{% endblock %}
 
-{% if logs %}
-<div class="table-responsive">
-    <table class="table table-bordered table-sm table-hover">
-        <thead class="table-dark">
+{% block content %}
+<style>
+    .page-title { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+
+    .section-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 12px; overflow: hidden;
+    }
+    .section-header {
+        padding: 16px 22px; border-bottom: 1px solid var(--border-color);
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .section-header h6 { font-size: 16px; font-weight: 700; margin: 0; }
+
+    /* Filters */
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-input {
+        padding: 8px 14px; border: 1.5px solid var(--border-color); border-radius: 8px;
+        font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--card-bg);
+    }
+    .filter-input:focus { border-color: var(--accent-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .filter-select { min-width: 140px; }
+
+    /* Audit Table */
+    .audit-table { width: 100%; }
+    .audit-table th {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--text-secondary); padding: 12px 18px; background: #f8fafc;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .audit-table td {
+        padding: 14px 18px; font-size: 13px; border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    .audit-table tr:last-child td { border-bottom: none; }
+    .audit-table tr:hover { background: rgba(59,130,246,0.02); }
+
+    .timestamp { font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono, monospace); }
+
+    .user-cell { display: flex; align-items: center; gap: 8px; }
+    .user-avatar-sm {
+        width: 28px; height: 28px; border-radius: 50%; display: flex;
+        align-items: center; justify-content: center; font-size: 11px;
+        font-weight: 700; flex-shrink: 0;
+    }
+    .user-avatar-sm.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .user-avatar-sm.green { background: rgba(16,185,129,0.1); color: #10b981; }
+    .user-avatar-sm.purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+    .user-avatar-sm.amber { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .user-role { font-size: 11px; color: var(--text-secondary); }
+
+    .action-badge { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .action-badge.triage_submitted { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .action-badge.recommendation_viewed { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+    .action-badge.transfer_accepted { background: rgba(16,185,129,0.1); color: #10b981; }
+    .action-badge.transfer_rejected { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .action-badge.override_performed { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .action-badge.status_updated { background: rgba(14,165,233,0.1); color: #0ea5e9; }
+    .action-badge.notification_sent { background: rgba(16,185,129,0.1); color: #10b981; }
+
+    .desc-text { font-size: 12.5px; color: var(--text-secondary); max-width: 300px; }
+    .case-link { color: var(--accent-blue); font-weight: 700; font-size: 12px; text-decoration: none; }
+
+    .btn-export {
+        background: transparent; border: 1.5px solid var(--border-color); border-radius: 8px;
+        padding: 7px 16px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+        cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-export:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+    .empty-state i { font-size: 40px; opacity: 0.3; margin-bottom: 8px; display: block; }
+
+    .pagination-info { font-size: 12px; color: var(--text-secondary); padding: 14px 18px; }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-2">
+    <div>
+        <div class="page-title">Audit Trail</div>
+        <p class="page-subtitle">Complete log of all critical system actions for accountability.</p>
+    </div>
+    <a href="{% url 'export_audit_csv' %}" class="btn-export"><i class="bi bi-download"></i> Export Audit Log (CSV)</a>
+</div>
+
+<!-- Filters -->
+<div class="filter-row">
+    <input type="text" class="filter-input" placeholder="Search user, description, case ID..." id="searchInput" onkeyup="filterTable()">
+    <select class="filter-input filter-select" id="actionFilter" onchange="filterTable()">
+        <option value="">All Action Types</option>
+        <option value="triage_submitted">Triage Submitted</option>
+        <option value="recommendation_viewed">Recommendation Viewed</option>
+        <option value="transfer_accepted">Transfer Accepted</option>
+        <option value="transfer_rejected">Transfer Rejected</option>
+        <option value="status_updated">Status Updated</option>
+    </select>
+</div>
+
+<!-- Audit Table -->
+<div class="section-card">
+    <table class="audit-table" id="auditTable">
+        <thead>
             <tr>
-                <th>Time</th>
+                <th>Timestamp</th>
                 <th>User</th>
                 <th>Action</th>
                 <th>Description</th>
                 <th>Case ID</th>
-                <th>Transfer ID</th>
             </tr>
         </thead>
         <tbody>
             {% for log in logs %}
-            <tr>
-                <td><small>{{ log.timestamp|date:"d M Y, H:i" }}</small></td>
-                <td>{{ log.performed_by|default:"Anonymous" }}</td>
+            <tr data-action="{{ log.action }}" data-search="{{ log.performed_by.username|lower }} {{ log.description|lower }} {{ log.patient_event.id|default:'' }}">
+                <td><span class="timestamp">{{ log.timestamp|date:"Y-m-d H:i:s" }}</span></td>
                 <td>
-                    <span class="badge bg-{% if 'accepted' in log.action %}success{% elif 'rejected' in log.action %}danger{% elif 'submitted' in log.action %}primary{% elif 'viewed' in log.action %}info{% elif 'updated' in log.action %}warning{% else %}secondary{% endif %}">
-                        {{ log.get_action_display }}
-                    </span>
+                    <div class="user-cell">
+                        <div class="user-avatar-sm {% if log.performed_by.role == 'paramedic' %}blue{% elif log.performed_by.role == 'hospital_admin' %}green{% elif log.performed_by.role == 'authority' %}amber{% else %}purple{% endif %}">
+                            {{ log.performed_by.username|make_list|first|upper }}
+                        </div>
+                        <div>
+                            <div class="user-name">{{ log.performed_by.username }}</div>
+                            <div class="user-role">{{ log.performed_by.get_role_display }}</div>
+                        </div>
+                    </div>
                 </td>
-                <td>{{ log.description }}</td>
-                <td>{% if log.patient_event %}#{{ log.patient_event.id }}{% else %}—{% endif %}</td>
-                <td>{% if log.transfer_request %}#{{ log.transfer_request.id }}{% else %}—{% endif %}</td>
+                <td><span class="action-badge {{ log.action }}">{{ log.get_action_display }}</span></td>
+                <td><span class="desc-text">{{ log.description|truncatewords:12 }}</span></td>
+                <td>
+                    {% if log.patient_event %}
+                    <span class="case-link">EM-{{ log.patient_event.id }}</span>
+                    {% else %}
+                    <span style="color:var(--text-secondary);">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <i class="bi bi-journal-text"></i>
+                        <p>No audit logs recorded yet.</p>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <div class="pagination-info">Showing {{ logs|length }} entries</div>
 </div>
-{% else %}
-<div class="alert alert-info">No audit logs yet.</div>
-{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterTable() {
+        var search = document.getElementById('searchInput').value.toLowerCase();
+        var action = document.getElementById('actionFilter').value;
+        var rows = document.querySelectorAll('#auditTable tbody tr');
+
+        rows.forEach(function(row) {
+            var searchData = row.getAttribute('data-search') || '';
+            var rowAction = row.getAttribute('data-action') || '';
+
+            var matchSearch = !search || searchData.indexOf(search) > -1;
+            var matchAction = !action || rowAction === action;
+
+            row.style.display = (matchSearch && matchAction) ? '' : 'none';
+        });
+    }
+</script>
 {% endblock %}
 </body>
 </html>

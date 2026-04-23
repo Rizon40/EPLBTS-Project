@@ -7,188 +7,306 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Monitoring &rsaquo; City Overview{% endblock %}
+
 {% block content %}
-<h3>📊 Authority Monitoring Dashboard</h3>
-<p class="text-muted">Real-time overview of emergency operations.</p>
-<hr>
+<style>
+    .page-title { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+    .page-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 
-<!-- Stats Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white text-center p-3">
-            <h2>{{ total_cases }}</h2>
-            <small>Total Cases</small>
-        </div>
+    /* Top Stats */
+    .top-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .top-stat {
+        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px;
+        padding: 18px 20px;
+    }
+    .top-stat .value { font-size: 26px; font-weight: 800; line-height: 1; }
+    .top-stat .value.red { color: #ef4444; }
+    .top-stat .value.blue { color: #3b82f6; }
+    .top-stat .value.green { color: #10b981; }
+    .top-stat .value.amber { color: #f59e0b; }
+    .top-stat .value.purple { color: #8b5cf6; }
+    .top-stat .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* Section Cards */
+    .section-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+    }
+    .section-header {
+        padding: 16px 22px; border-bottom: 1px solid var(--border-color);
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-header h6 { font-size: 16px; font-weight: 700; margin: 0; }
+    .section-body { padding: 20px 22px; }
+
+    /* Case Type Breakdown */
+    .case-type-item {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
+    .case-type-item:last-child { margin-bottom: 0; }
+    .case-type-label { font-size: 13px; font-weight: 600; color: var(--text-primary); min-width: 140px; }
+    .case-type-bar { flex: 1; height: 24px; background: var(--bg-main); border-radius: 6px; overflow: hidden; position: relative; }
+    .case-type-fill { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.5s; }
+    .case-type-fill.blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .case-type-fill.red { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .case-type-fill.amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .case-type-fill.purple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .case-type-fill.green { background: linear-gradient(90deg, #10b981, #34d399); }
+    .case-type-fill.pink { background: linear-gradient(90deg, #ec4899, #f472b6); }
+    .case-type-fill.teal { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
+    .case-type-fill.gray { background: linear-gradient(90deg, #64748b, #94a3b8); }
+    .case-type-count { font-size: 13px; font-weight: 700; color: var(--text-primary); min-width: 60px; text-align: right; }
+
+    /* Hospital Status Table */
+    .hospital-table { width: 100%; }
+    .hospital-table th {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--text-secondary); padding: 10px 16px; background: #f8fafc;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .hospital-table td {
+        padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    .hospital-table tr:last-child td { border-bottom: none; }
+    .hospital-table tr:hover { background: rgba(59,130,246,0.02); }
+
+    .load-bar { width: 80px; height: 8px; background: var(--bg-main); border-radius: 4px; display: inline-block; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+    .load-fill { height: 100%; border-radius: 4px; }
+    .load-fill.green { background: #10b981; }
+    .load-fill.amber { background: #f59e0b; }
+    .load-fill.red { background: #ef4444; }
+
+    .ed-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .ed-badge.open { background: rgba(16,185,129,0.1); color: #10b981; }
+    .ed-badge.closed { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+    /* Overload Alerts */
+    .alert-item {
+        padding: 14px 18px; border-bottom: 1px solid var(--border-color);
+        display: flex; align-items: flex-start; gap: 12px;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-item:hover { background: rgba(239,68,68,0.02); }
+    .alert-severity {
+        padding: 3px 10px; border-radius: 6px; font-size: 10.5px; font-weight: 700;
+        flex-shrink: 0;
+    }
+    .alert-severity.critical { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .alert-severity.high { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .alert-severity.warning { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .alert-severity.moderate { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+    .alert-text { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+    .alert-time { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Recent Cases Table */
+    .status-pill { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .status-pill.pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .status-pill.referred { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .status-pill.transferred { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+    .status-pill.completed { background: rgba(16,185,129,0.1); color: #10b981; }
+
+    .empty-state { text-align: center; padding: 30px; color: var(--text-secondary); }
+
+    @media (max-width: 767.98px) { .top-stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+
+<div class="page-title">City Emergency Monitoring</div>
+<p class="page-subtitle">Real-time overview of hospital loads, emergency trends, and resource distribution.</p>
+
+<!-- Top Stats -->
+<div class="top-stats">
+    <div class="top-stat">
+        <div class="value red">{{ total_cases }}</div>
+        <div class="label">Total Active Cases</div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark text-center p-3">
-            <h2>{{ pending_cases_count }}</h2>
-            <small>Pending Cases</small>
-        </div>
+    <div class="top-stat">
+        <div class="value blue">{{ total_hospitals }}/{{ total_hospitals }}</div>
+        <div class="label">Hospitals Online</div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white text-center p-3">
-            <h2>{{ referred_cases }}</h2>
-            <small>Referred Cases</small>
-        </div>
+    <div class="top-stat">
+        <div class="value amber">{{ overloaded_hospitals }}</div>
+        <div class="label">Overloaded</div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white text-center p-3">
-            <h2>{{ transferred_cases }}</h2>
-            <small>Transferred Cases</small>
-        </div>
+    <div class="top-stat">
+        <div class="value green">{{ accepted_transfers }}</div>
+        <div class="label">Transfers Today</div>
+    </div>
+    <div class="top-stat">
+        <div class="value purple">{{ pending_transfers }}</div>
+        <div class="label">Pending Requests</div>
     </div>
 </div>
 
-<!-- Hospital & Transfer Stats -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-primary text-center p-3">
-            <h2 class="text-primary">{{ total_hospitals }}</h2>
-            <small>Total Hospitals</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-success text-center p-3">
-            <h2 class="text-success">{{ accepting_hospitals }}</h2>
-            <small>Accepting Patients</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-danger text-center p-3">
-            <h2 class="text-danger">{{ overloaded_hospitals }}</h2>
-            <small>Overloaded Hospitals</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-warning text-center p-3">
-            <h2 class="text-warning">{{ pending_transfers }}</h2>
-            <small>Pending Transfers</small>
-        </div>
-    </div>
-</div>
-
-<!-- Transfer Stats -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card border-success text-center p-3">
-            <h3 class="text-success">{{ accepted_transfers }}</h3>
-            <small>Accepted Transfers</small>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-danger text-center p-3">
-            <h3 class="text-danger">{{ rejected_transfers }}</h3>
-            <small>Rejected Transfers</small>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-info text-center p-3">
-            <h3 class="text-info">{{ total_transfers }}</h3>
-            <small>Total Transfers</small>
-        </div>
-    </div>
-</div>
-
-<!-- Case Type Breakdown -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                📈 Emergency Type Breakdown
+<div class="row g-3">
+    <!-- Left Column -->
+    <div class="col-md-7">
+        <!-- Case Type Breakdown -->
+        <div class="section-card">
+            <div class="section-header">
+                <h6>Emergency Type Distribution</h6>
             </div>
-            <div class="card-body">
-                {% for stat in case_type_stats %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>{{ stat.case_type }}</span>
-                    <span class="badge bg-primary">{{ stat.count }} cases</span>
-                </div>
-                <div class="progress mb-3" style="height: 8px;">
-                    <div class="progress-bar bg-primary" style="width: {% widthratio stat.count total_cases 100 %}%"></div>
-                </div>
-                {% empty %}
-                <p class="text-muted">No cases yet.</p>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Hospital Load Overview -->
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                🏥 Hospital Load Overview
-            </div>
-            <div class="card-body">
-                {% for item in hospital_data %}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <strong>{{ item.hospital.name }}</strong>
-                        {% if item.status %}
-                        {% if item.status.is_accepting %}
-                        <span class="badge bg-success">Accepting</span>
-                        {% else %}
-                        <span class="badge bg-danger">Not Accepting</span>
-                        {% endif %}
-                        {% else %}
-                        <span class="badge bg-secondary">No Data</span>
-                        {% endif %}
+            <div class="section-body">
+                {% if case_type_stats %}
+                    {% for stat in case_type_stats %}
+                    <div class="case-type-item">
+                        <span class="case-type-label">{{ stat.case_type|title }}</span>
+                        <div class="case-type-bar">
+                            <div class="case-type-fill {% cycle 'blue' 'red' 'amber' 'purple' 'green' 'pink' 'teal' 'gray' %}"
+                                 style="width: {% widthratio stat.count total_cases 100 %}%"></div>
+                        </div>
+                        <span class="case-type-count">{{ stat.count }} cases</span>
                     </div>
-                    {% if item.status %}
-                    <small class="text-muted">ICU: {{ item.status.icu_available }}/{{ item.status.icu_total }} | Beds: {{ item.status.bed_available }}/{{ item.status.bed_total }}</small>
-                    <div class="progress mt-1" style="height: 8px;">
-                        <div class="progress-bar bg-{% if item.status.bed_load_percent < 50 %}success{% elif item.status.bed_load_percent < 80 %}warning{% else %}danger{% endif %}"
-                             style="width: {{ item.status.bed_load_percent }}%"></div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No case data yet.</div>
+                {% endif %}
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Recent Cases -->
-<div class="card shadow mb-4">
-    <div class="card-header bg-dark text-white">
-        📋 Recent Emergency Cases
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
+        <!-- Hospital Status Table -->
+        <div class="section-card">
+            <div class="section-header">
+                <h6>Hospital Status Summary</h6>
+            </div>
+            <table class="hospital-table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Type</th>
-                        <th>Patient</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                        <th>Time</th>
+                        <th>Hospital</th>
+                        <th>ICU</th>
+                        <th>Beds</th>
+                        <th>ED</th>
+                        <th>Load</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for case in recent_cases %}
+                    {% for item in hospital_data %}
                     <tr>
-                        <td>#{{ case.id }}</td>
-                        <td>{{ case.get_case_type_display }}</td>
-                        <td>{{ case.patient_age }} yrs, {{ case.get_patient_gender_display }}</td>
-                        <td>{{ case.location_text|default:"Auto-detected" }}</td>
+                        <td><strong>{{ item.hospital.name }}</strong></td>
+                        {% if item.status %}
+                        <td>{{ item.status.icu_available }}/{{ item.status.icu_total }}</td>
+                        <td>{{ item.status.bed_available }}/{{ item.status.bed_total }}</td>
                         <td>
-                            <span class="badge bg-{% if case.status == 'pending' %}warning{% elif case.status == 'referred' %}info{% elif case.status == 'transferred' %}success{% else %}secondary{% endif %}">
-                                {{ case.get_status_display }}
-                            </span>
+                            {% if item.status.is_accepting %}
+                            <span class="ed-badge open">Open</span>
+                            {% else %}
+                            <span class="ed-badge closed">Closed</span>
+                            {% endif %}
                         </td>
-                        <td>{{ case.created_at|timesince }} ago</td>
+                        <td>
+                            <span class="load-bar">
+                                <span class="load-fill {% if item.status.bed_load_percent > 80 %}red{% elif item.status.bed_load_percent > 60 %}amber{% else %}green{% endif %}"
+                                      style="width:{{ item.status.bed_load_percent }}%"></span>
+                            </span>
+                            <strong style="font-size:12px; color: {% if item.status.bed_load_percent > 80 %}#ef4444{% elif item.status.bed_load_percent > 60 %}#f59e0b{% else %}#10b981{% endif %}">
+                                {{ item.status.bed_load_percent }}%
+                            </strong>
+                        </td>
+                        {% else %}
+                        <td colspan="4" style="color:var(--text-secondary);">No data</td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Right Column -->
+    <div class="col-md-5">
+        <!-- Overload Alerts -->
+        <div class="section-card">
+            <div class="section-header">
+                <h6>Active Overload Alerts</h6>
+            </div>
+            {% for item in hospital_data %}
+                {% if item.status %}
+                    {% if item.status.bed_load_percent > 80 or item.status.icu_available <= 1 %}
+                    <div class="alert-item">
+                        <span class="alert-severity {% if item.status.bed_load_percent > 90 %}critical{% else %}high{% endif %}">
+                            {% if item.status.bed_load_percent > 90 %}Critical{% else %}High{% endif %}
+                        </span>
+                        <div>
+                            <div class="alert-text">
+                                <strong>{{ item.hospital.name }}</strong>
+                                {% if item.status.icu_available <= 1 %} — ICU at {{ item.status.icu_load_percent }}% capacity{% endif %}
+                                {% if item.status.bed_load_percent > 80 %} — Beds at {{ item.status.bed_load_percent }}%{% endif %}
+                            </div>
+                            <div class="alert-time">{{ item.status.updated_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            {% if overloaded_hospitals == 0 %}
+            <div class="section-body empty-state">
+                <i class="bi bi-check-circle" style="color:#10b981; font-size:24px;"></i>
+                <p>All hospitals within normal capacity.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Transfer Stats -->
+        <div class="section-card">
+            <div class="section-header">
+                <h6>Transfer Statistics</h6>
+            </div>
+            <div class="section-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span style="font-size:13px; color:var(--text-secondary);">Accepted</span>
+                    <strong style="font-size:13px; color:#10b981;">{{ accepted_transfers }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span style="font-size:13px; color:var(--text-secondary);">Rejected</span>
+                    <strong style="font-size:13px; color:#ef4444;">{{ rejected_transfers }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span style="font-size:13px; color:var(--text-secondary);">Pending</span>
+                    <strong style="font-size:13px; color:#f59e0b;">{{ pending_transfers }}</strong>
+                </div>
+                <div class="d-flex justify-content-between" style="border-top:1px solid var(--border-color); padding-top:12px;">
+                    <span style="font-size:13px; font-weight:700;">Total</span>
+                    <strong style="font-size:13px;">{{ total_transfers }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<a href="{% url 'audit_log' %}" class="btn btn-outline-dark">📝 View Audit Logs</a>
-<a href="{% url 'hospital_list' %}" class="btn btn-outline-primary">🏥 View Hospital List</a>
+<!-- Recent Cases -->
+<div class="section-card">
+    <div class="section-header">
+        <h6>Recent Emergency Cases</h6>
+        <span style="font-size:12px; color:var(--text-secondary);">{{ recent_cases|length }} cases</span>
+    </div>
+    <table class="hospital-table">
+        <thead>
+            <tr>
+                <th>Case ID</th>
+                <th>Type</th>
+                <th>Patient</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in recent_cases %}
+            <tr>
+                <td><strong style="color:var(--accent-blue);">EM-{{ case.id }}</strong></td>
+                <td>{{ case.get_case_type_display }}</td>
+                <td>{{ case.patient_age }} yrs, {{ case.get_patient_gender_display }}</td>
+                <td>{{ case.location_text|truncatewords:5 }}</td>
+                <td><span class="status-pill {{ case.status }}">{{ case.get_status_display }}</span></td>
+                <td style="color:var(--text-secondary); font-size:12px;">{{ case.created_at|timesince }} ago</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="empty-state">No cases yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
 </body>
 </html>

@@ -7,80 +7,361 @@
 <body>
 {% extends 'base.html' %}
 
+{% block breadcrumb %}Administration &rsaquo; Add Hospital{% endblock %}
+
 {% block content %}
-<h3>➕ Add New Hospital</h3>
-<hr>
+<style>
+    .page-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <form method="POST">
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .form-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .form-card-header {
+        background: linear-gradient(135deg, #111827, #1e293b);
+        padding: 24px 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .form-card-header .icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(59, 130, 246, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #60a5fa;
+    }
+
+    .form-card-header .title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .form-card-header .desc {
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .form-body {
+        padding: 28px;
+    }
+
+    .form-section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-label-sm {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+
+    .required-star {
+        color: #ef4444;
+    }
+
+    .form-control, .form-select {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 11px 14px;
+        font-size: 14px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+    }
+
+    .btn-detect {
+        background: rgba(59, 130, 246, 0.08);
+        color: var(--accent-blue);
+        border: 1.5px solid rgba(59, 130, 246, 0.2);
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s;
+    }
+
+    .btn-detect:hover {
+        background: rgba(59, 130, 246, 0.15);
+        border-color: var(--accent-blue);
+    }
+
+    .loc-status {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-left: 8px;
+    }
+
+    .specialty-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+
+    .specialty-card {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--card-bg);
+    }
+
+    .specialty-card:hover {
+        border-color: var(--accent-blue);
+    }
+
+    .specialty-card.selected {
+        border-color: var(--accent-blue);
+        background: rgba(59, 130, 246, 0.06);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .specialty-card input {
+        display: none;
+    }
+
+    .specialty-card .icon {
+        font-size: 22px;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .specialty-card .label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .btn-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 13px 32px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 13px 32px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        border-color: var(--text-secondary);
+        color: var(--text-primary);
+    }
+
+    @media (max-width: 767.98px) {
+        .specialty-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="form-card">
+            <!-- Header -->
+            <div class="form-card-header">
+                <div class="icon"><i class="bi bi-hospital"></i></div>
+                <div>
+                    <div class="title">Add New Hospital</div>
+                    <div class="desc">Register a new hospital to the EPLBTS network</div>
+                </div>
+            </div>
+
+            <!-- Form Body -->
+            <div class="form-body">
+                <form method="POST" id="addHospitalForm">
                     {% csrf_token %}
+                    <input type="hidden" name="specialty" id="selectedSpecialty" value="general">
+
+                    <!-- Basic Info -->
+                    <div class="form-section-title"><i class="bi bi-info-circle"></i> Basic Information</div>
 
                     <div class="mb-3">
-                        <label class="form-label">Hospital Name *</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <div class="form-label-sm">Hospital Name <span class="required-star">*</span></div>
+                        <input type="text" name="name" class="form-control"
+                               placeholder="e.g. Dhaka Medical College Hospital" required>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Address *</label>
-                        <textarea name="address" class="form-control" rows="2" required></textarea>
+                    <div class="mb-4">
+                        <div class="form-label-sm">Address <span class="required-star">*</span></div>
+                        <textarea name="address" class="form-control" rows="2"
+                                  placeholder="Full address with area and city" required></textarea>
                     </div>
 
-                    <div class="row mb-3">
+                    <!-- Location -->
+                    <div class="form-section-title"><i class="bi bi-geo-alt"></i> Location</div>
+
+                    <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label class="form-label">Latitude *</label>
-                            <input type="number" name="latitude" class="form-control" step="any" id="add_lat" required>
+                            <div class="form-label-sm">Latitude <span class="required-star">*</span></div>
+                            <input type="number" name="latitude" class="form-control" step="any" id="add_lat"
+                                   placeholder="23.XXXXX" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Longitude *</label>
-                            <input type="number" name="longitude" class="form-control" step="any" id="add_lng" required>
+                            <div class="form-label-sm">Longitude <span class="required-star">*</span></div>
+                            <input type="number" name="longitude" class="form-control" step="any" id="add_lng"
+                                   placeholder="90.XXXXX" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Phone Number</label>
-                            <input type="text" name="phone_number" class="form-control">
+                            <div class="form-label-sm">Phone Number</div>
+                            <input type="text" name="phone_number" class="form-control" placeholder="+880 1XXX-XXXXXX">
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Specialty</label>
-                        <select name="specialty" class="form-select">
-                            <option value="general">General</option>
-                            <option value="cardiac">Cardiac</option>
-                            <option value="trauma">Trauma</option>
-                            <option value="neurology">Neurology</option>
-                            <option value="pediatric">Pediatric</option>
-                        </select>
+                    <div class="mb-4">
+                        <button type="button" class="btn-detect" onclick="detectHospitalLocation()">
+                            <i class="bi bi-crosshair"></i> Auto-Detect Location
+                        </button>
+                        <span id="hospLocStatus" class="loc-status"></span>
                     </div>
 
-                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="detectHospitalLocation()">
-                        📍 Auto-Detect Location
-                    </button>
-                    <span id="hospLocStatus" class="text-muted small ms-2"></span>
+                    <!-- Specialty -->
+                    <div class="form-section-title"><i class="bi bi-star"></i> Specialty</div>
 
-                    <hr>
-                    <button type="submit" class="btn btn-success btn-lg">💾 Add Hospital</button>
-                    <a href="{% url 'manage_hospitals' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                    <div class="specialty-grid mb-4">
+                        <div class="specialty-card selected" onclick="selectSpecialty(this, 'general')">
+                            <input type="radio" name="spec_radio" checked>
+                            <span class="icon"><i class="bi bi-hospital" style="color:#3b82f6;"></i></span>
+                            <span class="label">General</span>
+                        </div>
+                        <div class="specialty-card" onclick="selectSpecialty(this, 'cardiac')">
+                            <input type="radio" name="spec_radio">
+                            <span class="icon"><i class="bi bi-heart-pulse" style="color:#ef4444;"></i></span>
+                            <span class="label">Cardiac</span>
+                        </div>
+                        <div class="specialty-card" onclick="selectSpecialty(this, 'trauma')">
+                            <input type="radio" name="spec_radio">
+                            <span class="icon"><i class="bi bi-bandaid" style="color:#f59e0b;"></i></span>
+                            <span class="label">Trauma</span>
+                        </div>
+                        <div class="specialty-card" onclick="selectSpecialty(this, 'neurology')">
+                            <input type="radio" name="spec_radio">
+                            <span class="icon"><i class="bi bi-lightning" style="color:#8b5cf6;"></i></span>
+                            <span class="label">Neurology</span>
+                        </div>
+                        <div class="specialty-card" onclick="selectSpecialty(this, 'pediatric')">
+                            <input type="radio" name="spec_radio">
+                            <span class="icon"><i class="bi bi-emoji-smile" style="color:#10b981;"></i></span>
+                            <span class="label">Pediatric</span>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="btn-actions">
+                        <button type="submit" class="btn-save">
+                            <i class="bi bi-check-circle"></i> Add Hospital
+                        </button>
+                        <a href="{% url 'manage_hospitals' %}" class="btn-cancel">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-function detectHospitalLocation() {
-    var statusEl = document.getElementById('hospLocStatus');
-    statusEl.textContent = 'Detecting...';
+    function detectHospitalLocation() {
+        var statusEl = document.getElementById('hospLocStatus');
+        statusEl.innerHTML = '<i class="bi bi-arrow-repeat"></i> Detecting...';
 
-    navigator.geolocation.getCurrentPosition(function(position) {
-        document.getElementById('add_lat').value = position.coords.latitude.toFixed(5);
-        document.getElementById('add_lng').value = position.coords.longitude.toFixed(5);
-        statusEl.textContent = 'Location detected!';
-    }, function() {
-        statusEl.textContent = 'Location access denied.';
-    });
-}
+        if (!navigator.geolocation) {
+            statusEl.innerHTML = '<span style="color:#ef4444;">Geolocation not supported.</span>';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            document.getElementById('add_lat').value = position.coords.latitude.toFixed(5);
+            document.getElementById('add_lng').value = position.coords.longitude.toFixed(5);
+            statusEl.innerHTML = '<span style="color:#10b981;"><i class="bi bi-check-circle-fill"></i> Location detected!</span>';
+        }, function () {
+            statusEl.innerHTML = '<span style="color:#ef4444;"><i class="bi bi-x-circle"></i> Location access denied.</span>';
+        });
+    }
+
+    function selectSpecialty(card, value) {
+        document.querySelectorAll('.specialty-card').forEach(function (c) {
+            c.classList.remove('selected');
+        });
+        card.classList.add('selected');
+        document.getElementById('selectedSpecialty').value = value;
+    }
 </script>
 {% endblock %}
 </body>
