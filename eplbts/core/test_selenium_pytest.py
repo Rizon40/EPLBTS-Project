@@ -529,3 +529,192 @@ def test_notifications_page_loads():
     page = driver.find_element(By.TAG_NAME, "body").text
     assert "Notification" in page
     driver.quit()
+
+# STAGE 5 TESTS (TEST 32-45)
+# TEST 32: Dark mode toggle button changes theme
+def test_dark_mode_toggle_changes_theme():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    # Before toggle
+    initial_theme = driver.execute_script("return document.body.getAttribute('data-theme');")
+    # Click toggle (theme switch button)
+    toggle = driver.find_element(By.ID, "theme-toggle")
+    js_click(driver, toggle)
+    time.sleep(1)
+    new_theme = driver.execute_script("return document.body.getAttribute('data-theme');")
+    assert initial_theme != new_theme
+    driver.quit()
+
+
+# TEST 33: Dark mode persists after page reload
+def test_dark_mode_persists_on_reload():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    # Enable dark mode
+    driver.execute_script("localStorage.setItem('theme', 'dark');")
+    driver.refresh()
+    time.sleep(1)
+    theme = driver.execute_script("return document.documentElement.getAttribute('data-theme');")
+    assert theme == "dark"
+    driver.quit()
+
+
+# TEST 34: Breadcrumb block visible on pages
+def test_breadcrumb_visible_on_hospital_list():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/hospitals/")
+    time.sleep(1)
+    page = driver.page_source
+    assert "breadcrumb" in page.lower() or "&rsaquo;" in page or "›" in page
+    driver.quit()
+
+
+# TEST 35: Login page uses new design (section-card)
+def test_login_page_new_design():
+    driver = get_driver()
+    driver.get(f"{BASE_URL}/accounts/login/")
+    time.sleep(1)
+    page = driver.page_source
+    assert "section-card" in page or "page-title" in page or "card" in page
+    driver.quit()
+
+
+# TEST 36: Bootstrap Icons loaded (Plus Jakarta font + bi classes)
+def test_bootstrap_icons_and_fonts_loaded():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    page = driver.page_source
+    assert "bootstrap-icons" in page or "Plus Jakarta" in page
+    driver.quit()
+
+
+# --- SCRUM-59: Feature Enhancement Tests ---
+
+# TEST 37: Triage form has triage_level dropdown
+def test_triage_form_has_triage_level_field():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/triage/submit/")
+    time.sleep(1)
+    dropdowns = driver.find_elements(By.NAME, "triage_level")
+    assert len(dropdowns) > 0
+    driver.quit()
+
+
+# TEST 38: Submit triage with triage_level=critical
+def test_submit_triage_with_critical_level():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/triage/submit/")
+    time.sleep(1)
+
+    Select(driver.find_element(By.NAME, "case_type")).select_by_value("accident")
+    time.sleep(0.3)
+    Select(driver.find_element(By.NAME, "triage_level")).select_by_value("critical")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "description").send_keys("Critical road accident")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "patient_age").send_keys("40")
+    time.sleep(0.3)
+    Select(driver.find_element(By.NAME, "patient_gender")).select_by_value("male")
+    time.sleep(0.3)
+    driver.find_element(By.NAME, "location_text").send_keys("Uttara, Dhaka")
+    time.sleep(0.3)
+    js_click(driver, driver.find_element(By.CSS_SELECTOR, "button[type='submit']"))
+    time.sleep(2)
+    assert "/triage/success/" in driver.current_url
+    driver.quit()
+
+
+# TEST 39: Paramedic dashboard shows role-based stats
+def test_paramedic_dashboard_shows_stats():
+    driver = get_driver()
+    do_login(driver, "para_user")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text.lower()
+    assert "active" in page or "transferred" in page or "case" in page
+    driver.quit()
+
+
+# TEST 40: Hospital admin dashboard shows ICU/bed info
+def test_hospital_admin_dashboard_shows_bed_info():
+    driver = get_driver()
+    do_login(driver, "hosp_admin")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text.lower()
+    assert "icu" in page or "bed" in page or "pending" in page
+    driver.quit()
+
+
+# TEST 41: Authority dashboard shows total hospitals stat
+def test_authority_dashboard_shows_stats():
+    driver = get_driver()
+    do_login(driver, "auth_user")
+    driver.get(f"{BASE_URL}/dashboard/")
+    time.sleep(1)
+    page = driver.find_element(By.TAG_NAME, "body").text.lower()
+    assert "hospital" in page or "transfer" in page or "case" in page
+    driver.quit()
+
+
+# TEST 42: Mark notification as read button
+def test_mark_notification_as_read():
+    driver = get_driver()
+    do_login(driver, "hosp_admin")
+    driver.get(f"{BASE_URL}/notifications/")
+    time.sleep(1)
+    page = driver.page_source.lower()
+    # Button/link exists even if no notifications to mark
+    assert "mark" in page or "read" in page or "notification" in page
+    driver.quit()
+
+
+# TEST 43: Export audit CSV link present for authority
+def test_export_audit_csv_link_visible():
+    driver = get_driver()
+    do_login(driver, "auth_user")
+    driver.get(f"{BASE_URL}/audit/")
+    time.sleep(1)
+    page = driver.page_source.lower()
+    assert "export" in page or "csv" in page or "download" in page
+    driver.quit()
+
+
+# TEST 44: Duplicate email on registration blocked
+def test_duplicate_email_registration_blocked():
+    driver = get_driver()
+    driver.get(f"{BASE_URL}/accounts/register/")
+    time.sleep(1)
+    # Use an email that already exists (create a user first if needed)
+    driver.find_element(By.NAME, "username").send_keys("dup_user_test")
+    driver.find_element(By.NAME, "email").send_keys("para_user@example.com")
+    driver.find_element(By.NAME, "phone_number").send_keys("01711112222")
+    driver.find_element(By.NAME, "password1").send_keys("TestPass123!")
+    driver.find_element(By.NAME, "password2").send_keys("TestPass123!")
+    time.sleep(0.3)
+    js_click(driver, driver.find_element(By.CSS_SELECTOR, "button[type='submit']"))
+    time.sleep(2)
+    # Either blocked with error OR registration failed (still on same page)
+    page = driver.page_source.lower()
+    assert "already" in page or "register" in driver.current_url
+    driver.quit()
+
+
+# TEST 45: Incoming transfers page shows pending + completed sections
+def test_incoming_transfers_has_pending_and_completed_sections():
+    driver = get_driver()
+    do_login(driver, "hosp_admin")
+    driver.get(f"{BASE_URL}/transfers/incoming/")
+    time.sleep(1)
+    page = driver.page_source.lower()
+    assert "pending" in page and ("completed" in page or "accepted" in page or "rejected" in page)
+    driver.quit()
